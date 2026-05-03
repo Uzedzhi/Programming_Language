@@ -1,0 +1,571 @@
+10
+(
+	PROGRAM_START
+	(
+		FUNC
+		(
+			"Root1" 0 0
+			(
+				FUNC_BODY
+				(
+					NEW_PARAM
+					(
+						"D" 1 1
+					)
+					(
+						NEW_PARAM
+						(
+							"a" 2 1
+						)
+						(
+							NEW_PARAM
+							(
+								"b" 3 1
+							)
+						)
+					)
+				)
+				(
+					NEW_OP
+					(
+						NEW_INIT
+						(
+							VAR_DECLARATION
+							(
+								"x" 4 1
+							)
+							(
+								/
+								(
+									+
+									(
+										*
+										(
+											"-1"
+										)
+										(
+											"b" 3 1
+										)
+									)
+									(
+										sqrt
+										(
+											"D" 1 1
+										)
+									)
+								)
+								(
+									*
+									(
+										"2"
+									)
+									(
+										"a" 2 1
+									)
+								)
+							)
+						)
+					)
+				)
+			)
+			(
+				"x" 4 1
+			)
+		)
+		(
+			FUNC
+			(
+				"Root2" 5 0
+				(
+					FUNC_BODY
+					(
+						NEW_PARAM
+						(
+							"D" 1 1
+						)
+						(
+							NEW_PARAM
+							(
+								"a" 2 1
+							)
+							(
+								NEW_PARAM
+								(
+									"b" 3 1
+								)
+							)
+						)
+					)
+					(
+						NEW_OP
+						(
+							NEW_INIT
+							(
+								VAR_DECLARATION
+								(
+									"x" 4 1
+								)
+								(
+									/
+									(
+										-
+										(
+											*
+											(
+												"-1"
+											)
+											(
+												"b" 3 1
+											)
+										)
+										(
+											sqrt
+											(
+												"D" 1 1
+											)
+										)
+									)
+									(
+										*
+										(
+											"2"
+										)
+										(
+											"a" 2 1
+										)
+									)
+								)
+							)
+						)
+					)
+				)
+				(
+					"x" 4 1
+				)
+			)
+			(
+				FUNC
+				(
+					"Det" 6 0
+					(
+						FUNC_BODY
+						(
+							NEW_PARAM
+							(
+								"a" 2 1
+							)
+							(
+								NEW_PARAM
+								(
+									"b" 3 1
+								)
+								(
+									NEW_PARAM
+									(
+										"c" 7 1
+									)
+								)
+							)
+						)
+						(
+							NEW_OP
+							(
+								NEW_INIT
+								(
+									VAR_DECLARATION
+									(
+										"D" 1 1
+									)
+									(
+										-
+										(
+											*
+											(
+												"b" 3 1
+											)
+											(
+												"b" 3 1
+											)
+										)
+										(
+											*
+											(
+												*
+												(
+													"4"
+												)
+												(
+													"a" 2 1
+												)
+											)
+											(
+												"c" 7 1
+											)
+										)
+									)
+								)
+							)
+						)
+					)
+					(
+						"D" 1 1
+					)
+				)
+			)
+		)
+	)
+	(
+		NEW_OP
+		(
+			IN
+			(
+				"a" 2 0
+			)
+		)
+		(
+			NEW_OP
+			(
+				IN
+				(
+					"b" 3 0
+				)
+			)
+			(
+				NEW_OP
+				(
+					IN
+					(
+						"c" 7 0
+					)
+				)
+				(
+					NEW_OP
+					(
+						IF
+						(
+							NEW_CMP
+							(
+								==
+								(
+									"a" 2 0
+								)
+								(
+									"0"
+								)
+							)
+						)
+						(
+							IF_ELSE
+							(
+								NEW_OP
+								(
+									IF
+									(
+										NEW_CMP
+										(
+											==
+											(
+												"b" 3 0
+											)
+											(
+												"0"
+											)
+										)
+									)
+									(
+										IF_ELSE
+										(
+											NEW_OP
+											(
+												IF
+												(
+													NEW_CMP
+													(
+														==
+														(
+															"c" 7 0
+														)
+														(
+															"0"
+														)
+													)
+												)
+												(
+													IF_ELSE
+													(
+														NEW_OP
+														(
+															OUT
+															(
+																"-1"
+															)
+														)
+													)
+													(
+														NEW_OP
+														(
+															OUT
+															(
+																"0"
+															)
+														)
+													)
+												)
+											)
+										)
+										(
+											NEW_OP
+											(
+												OUT
+												(
+													"1"
+												)
+											)
+											(
+												NEW_OP
+												(
+													OUT
+													(
+														/
+														(
+															*
+															(
+																"-1"
+															)
+															(
+																"c" 7 0
+															)
+														)
+														(
+															"b" 3 0
+														)
+													)
+												)
+											)
+										)
+									)
+								)
+							)
+							(
+								NEW_OP
+								(
+									FUNC_CALL
+									(
+										"D" 1 1
+									)
+									(
+										FUNC
+										(
+											"Det" 6 0
+										)
+										(
+											NEW_PARAM
+											(
+												"a" 2 0
+											)
+											(
+												NEW_PARAM
+												(
+													"b" 3 0
+												)
+												(
+													NEW_PARAM
+													(
+														"c" 7 0
+													)
+												)
+											)
+										)
+									)
+								)
+								(
+									NEW_OP
+									(
+										FUNC_CALL
+										(
+											"x1" 8 1
+										)
+										(
+											FUNC
+											(
+												"Root1" 0 0
+											)
+											(
+												NEW_PARAM
+												(
+													"D" 1 1
+												)
+												(
+													NEW_PARAM
+													(
+														"a" 2 0
+													)
+													(
+														NEW_PARAM
+														(
+															"b" 3 0
+														)
+													)
+												)
+											)
+										)
+									)
+									(
+										NEW_OP
+										(
+											FUNC_CALL
+											(
+												"x2" 9 1
+											)
+											(
+												FUNC
+												(
+													"Root2" 5 0
+												)
+												(
+													NEW_PARAM
+													(
+														"D" 1 1
+													)
+													(
+														NEW_PARAM
+														(
+															"a" 2 0
+														)
+														(
+															NEW_PARAM
+															(
+																"b" 3 0
+															)
+														)
+													)
+												)
+											)
+										)
+										(
+											NEW_OP
+											(
+												IF
+												(
+													NEW_CMP
+													(
+														==
+														(
+															"D" 1 1
+														)
+														(
+															"0"
+														)
+													)
+												)
+												(
+													IF_ELSE
+													(
+														NEW_OP
+														(
+															OUT
+															(
+																"1"
+															)
+														)
+														(
+															NEW_OP
+															(
+																OUT
+																(
+																	"x1" 8 1
+																)
+															)
+														)
+													)
+													(
+														NEW_OP
+														(
+															IF
+															(
+																NEW_CMP
+																(
+																	>
+																	(
+																		"D" 1 1
+																	)
+																	(
+																		"0"
+																	)
+																)
+															)
+															(
+																IF_ELSE
+																(
+																	NEW_OP
+																	(
+																		OUT
+																		(
+																			"2"
+																		)
+																	)
+																	(
+																		NEW_OP
+																		(
+																			OUT
+																			(
+																				"x1" 8 1
+																			)
+																		)
+																		(
+																			NEW_OP
+																			(
+																				OUT
+																				(
+																					"x2" 9 1
+																				)
+																			)
+																		)
+																	)
+																)
+																(
+																	NEW_OP
+																	(
+																		IF
+																		(
+																			NEW_CMP
+																			(
+																				<
+																				(
+																					"D" 1 1
+																				)
+																				(
+																					"0"
+																				)
+																			)
+																		)
+																		(
+																			IF_ELSE
+																			(
+																				NEW_OP
+																				(
+																					OUT
+																					(
+																						"0"
+																					)
+																				)
+																			)
+																		)
+																	)
+																)
+															)
+														)
+													)
+												)
+											)
+										)
+									)
+								)
+							)
+						)
+					)
+				)
+			)
+		)
+	)
+)

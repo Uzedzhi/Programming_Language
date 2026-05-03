@@ -1,0 +1,142 @@
+CALL :main
+
+:Root1 {
+    POPR [3]
+    POPR [2]
+    POPR [1]
+    PUSH -1
+    PUSHR [3]
+    MUL
+    PUSHR [1]
+    ROOT
+    ADD
+    PUSH 2
+    PUSHR [2]
+    MUL
+    DIV
+    POPR [4]
+    PUSHR [4]
+    RET
+}
+
+:Root2 {
+    POPR [3]
+    POPR [2]
+    POPR [1]
+    PUSH -1
+    PUSHR [3]
+    MUL
+    PUSHR [1]
+    ROOT
+    SUB
+    PUSH 2
+    PUSHR [2]
+    MUL
+    DIV
+    POPR [4]
+    PUSHR [4]
+    RET
+}
+
+:Det {
+    POPR [7]
+    POPR [3]
+    POPR [2]
+    PUSHR [3]
+    PUSHR [3]
+    MUL
+    PUSH 4
+    PUSHR [2]
+    MUL
+    PUSHR [7]
+    MUL
+    SUB
+    POPR [1]
+    PUSHR [1]
+    RET
+}
+
+:main {
+    IN
+    POPMN [2]
+    IN
+    POPMN [3]
+    IN
+    POPMN [7]
+    PUSHMN [2]
+    PUSH 0
+    JNE :IF_MIDDLE_0
+    PUSHMN [3]
+    PUSH 0
+    JNE :IF_MIDDLE_1
+    PUSHMN [7]
+    PUSH 0
+    JNE :IF_MIDDLE_2
+    PUSH -1
+    OUT
+JMP :IF_END_2
+:IF_MIDDLE_2
+    PUSH 0
+    OUT
+:IF_END_2
+JMP :IF_END_1
+:IF_MIDDLE_1
+    PUSH 1
+    OUT
+    PUSH -1
+    PUSHMN [7]
+    MUL
+    PUSHMN [3]
+    DIV
+    OUT
+:IF_END_1
+JMP :IF_END_0
+:IF_MIDDLE_0
+    PUSHMN [2]
+    PUSHMN [3]
+    PUSHMN [7]
+    CALL :Det
+    POPMN [11]
+    PUSHMN [11]
+    PUSHMN [2]
+    PUSHMN [3]
+    CALL :Root1
+    POPMN [18]
+    PUSHMN [11]
+    PUSHMN [2]
+    PUSHMN [3]
+    CALL :Root2
+    POPMN [19]
+    PUSHMN [11]
+    PUSH 0
+    JNE :IF_MIDDLE_3
+    PUSH 1
+    OUT
+    PUSHMN [18]
+    OUT
+JMP :IF_END_3
+:IF_MIDDLE_3
+    PUSHMN [11]
+    PUSH 0
+    JBE :IF_MIDDLE_4
+    PUSH 2
+    OUT
+    PUSHMN [18]
+    OUT
+    PUSHMN [19]
+    OUT
+JMP :IF_END_4
+:IF_MIDDLE_4
+    PUSHMN [11]
+    PUSH 0
+    JAE :IF_MIDDLE_5
+    PUSH 0
+    OUT
+JMP :IF_END_5
+:IF_MIDDLE_5
+:IF_END_5
+:IF_END_4
+:IF_END_3
+:IF_END_0
+    HLT
+}
