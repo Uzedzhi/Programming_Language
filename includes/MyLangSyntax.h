@@ -9,12 +9,11 @@
 
 
 #define PRINT_CUR_TYPE_AND_OP(NodeArr, str) \
-    fprintf(stderr, "%s: type: %s ", str, AllValueTypesTxt[(**NodeArr).type]);\
-    switch((**NodeArr).type) {\
-        case TYPE_NUM:   fprintf(stderr, "num: %d\n",  (**NodeArr).value.num);                                  break;\
-        case TYPE_VAR:   fprintf(stderr, "var: %s\n",  (**NodeArr).value.var_name);                             break;\
-        case TYPE_OP:    fprintf(stderr, "op: %s\n",   AllOperDumpStr[(**NodeArr).value.oper]);                 break;\
-        case TYPE_CNOP:  fprintf(stderr, "cnop: %s\n", AllOperCNOPDumpStr[(**NodeArr).value.CNop]);             break;\
+    fprintf(stderr, "%s: type: %s ", str, AllValueTypesTxt[(NodeArr).type]);\
+    switch((NodeArr).type) {\
+        case TYPE_NUM:   fprintf(stderr, "num: %d\n",  (NodeArr).value.num);                                  break;\
+        case TYPE_VAR:   fprintf(stderr, "var: %s\n",  (NodeArr).value.var_name);                             break;\
+        case TYPE_OP:    fprintf(stderr, "op: %s\n",   AllOperDumpStr[(NodeArr).value.oper]);                 break;\
     }
 
 
@@ -43,8 +42,8 @@ Node_t * GetNUM(Node_t **NodeArr, LexArr_t *LexArr);
 
 
 LangOperType_e GetArthmOper(Node_t **NodeArr);
-bool CheckIfOperNextAndInc(Node_t **NodeArr, int oper, LangType_e type);
-bool CheckIfOperNext(Node_t **NodeArr, int oper, LangType_e type);
+bool CheckIfOperNextAndInc(Node_t **NodeArr, LangOperType_e oper);
+bool CheckIfOperNext(Node_t **NodeArr, LangOperType_e oper);
 
 
 int GetVarIndex(LexArr_t *LexArr, char *VarName);

@@ -9,24 +9,19 @@
 #include "MyLang.h"
 #include "MyLangDump.h"
 
-#define ISVAR   tree->type == TYPE_VAR
-#define ISSTR   tree->type == TYPE_STR
-#define ISNUM   tree->type == TYPE_NUM
-#define ISOPER  tree->type == TYPE_OP
-#define ISCNOP  tree->type == TYPE_CNOP
+#define ISVAR   Tree->type == TYPE_VAR
+#define ISSTR   Tree->type == TYPE_STR
+#define ISNUM   Tree->type == TYPE_NUM
+#define ISOPER  Tree->type == TYPE_OP
+#define ISCNOP  Tree->type == TYPE_CNOP
 #define SYNTAX_ERROR(NodeArr, ...) {\
-    fprintf(stderr, "NOW: type: %s ", AllValueTypesTxt[tree->type]);\
-    switch(tree->type) {\
-        case TYPE_NUM:   fprintf(stderr, "num: %d\n",  tree->value.num);                              break;\
-        case TYPE_VAR:   fprintf(stderr, "var: %s\n",  tree->value.var_name);                         break;\
-        case TYPE_OP:    fprintf(stderr, "op: %s\n",   AllOperDumpStr[tree->value.oper]);             break;\
-        case TYPE_CNOP:  fprintf(stderr, "cnop: %s\n", AllOperCNOPDumpStr[tree->value.CNop]);         break;\
+    fprintf(stderr, "NOW: type: %s ", AllValueTypesTxt[NodeArr->type]);\
+    switch(NodeArr->type) {\
+        case TYPE_NUM:   fprintf(stderr, "num: %d\n",  NodeArr->value.num);                              break;\
+        case TYPE_VAR:   fprintf(stderr, "var: %s\n",  NodeArr->value.var_name);                         break;\
+        case TYPE_OP:    fprintf(stderr, "op: %s\n",   AllOperDumpStr[NodeArr->value.oper]);             break;\
     }\
-    fprintf(stderr, RED "-->SYNTAX ERROR: " __VA_ARGS__); fprintf(stderr, "\n" WHITE); sassert(0, ERR_PTR_NULL);}
-
-bool CheckIfOperNext(Node_t *tree, int oper, LangType_e type) {
-    return (ISOPER && tree->value.oper == (LangOperType_e) oper && type == TYPE_OP) || (ISCNOP && tree->value.CNop == (LangCNOPType_e) oper && type == TYPE_CNOP);
-}
+    fprintf(stderr, RED "-->SYNTAX ERROR: " __VA_ARGS__); fprintf(stderr, "\n" WHITE); sassert(0, ERR_PTR_NULL_LANG);}
 
 #define MATCHOPER_ORSYNTAXERR(type, oper, ...) {\
     if (!CheckIfOperNextAndInc(NodeArr, oper, type)) {\
@@ -38,7 +33,7 @@ void PrintHelp() {
 }
 
 size_t get_file_size(FILE * fp) {
-    sassert(fp, ERR_PTR_NULL);
+    sassert(fp, ERR_PTR_NULL_LANG);
 
     fseek(fp, 0, SEEK_END);
     size_t file_size = (size_t) ftell(fp);
@@ -48,7 +43,7 @@ size_t get_file_size(FILE * fp) {
 }
 
 void nullify_anything_extra(char * buffer, size_t file_size, size_t actually_read) {
-    sassert(buffer != NULL, ERR_PTR_NULL);
+    sassert(buffer != NULL, ERR_PTR_NULL_LANG);
 
     while (actually_read < file_size) {
         buffer[++actually_read] = '\0';
@@ -56,10 +51,10 @@ void nullify_anything_extra(char * buffer, size_t file_size, size_t actually_rea
 }
 
 char * get_buffer_from_file(FILE * fp, size_t file_size) {
-    sassert(fp, ERR_PTR_NULL);
+    sassert(fp, ERR_PTR_NULL_LANG);
 
     char * compile_buffer = (char *) calloc(file_size + 1, sizeof(char));
-    sassert(compile_buffer, ERR_PTR_NULL);
+    sassert(compile_buffer, ERR_PTR_NULL_LANG);
 
     size_t actually_read = fread(compile_buffer, sizeof(char), file_size, fp);
     nullify_anything_extra(compile_buffer, file_size, actually_read);
@@ -76,21 +71,18 @@ void SkipSpaces(size_t * pos, const char * buffer) {
 
  char * ReadQuotedString(size_t *pos, const char *buffer) {
     (*pos)++; // skip first "
-    size_t start = *pos;
-    while (buffer[*pos] != '\"')
-        (*pos)++;
 
-    size_t len = *pos - start;
-    char *str = CALLOC_WITH_TYPE(len + 1, char);
-    strncpy(str, buffer + start, len);
+    size_t len  = strcspn(buffer + *pos, "\"\0");
+    char *str   = strndup(buffer + *pos, len);
 
-    (*pos)++; // skip last "
+
+    (*pos) += len + 1; // skip last "
     return str;
 }
 
-Node_t * NewNode(LangType_e type, LangElem_u value, Node_t *left, Node_t *right) {
+Node_t * NewNode(LangOperType_e type, LangElem_u value, Node_t *left, Node_t *right) {
     Node_t * node = CALLOC_WITH_TYPE(1, Node_t);
-    sassert(node, ERR_PTR_NULL);
+    sassert(node, ERR_PTR_NULL_LANG);
 
     node->type  = type;
     node->value = value;
@@ -110,7 +102,7 @@ bool IsIntStr(const char *s) {
 }
 
 LangOperType_e CheckOperType(const char * const FileBuf, int *str_len) {
-    sassert(FileBuf, ERR_PTR_NULL);
+    sassert(FileBuf, ERR_PTR_NULL_LANG);
 
     for (size_t i = 0; i < NumOfOpers; i++) {
         int CurStrLen = strlen(AllOperInFileStr[i][0]);
@@ -127,7 +119,7 @@ LangOperType_e CheckOperType(const char * const FileBuf, int *str_len) {
 }
 
 LangCNOPType_e CheckOperCNOPType(const char * const FileBuf, int *str_len) {
-    sassert(FileBuf, ERR_PTR_NULL);
+    sassert(FileBuf, ERR_PTR_NULL_LANG);
 
     for (size_t i = 0; i < NumOfCNOPOpers; i++) {
         int CurStrLen = strlen(AllOperCNOPDumpStr[i]);
@@ -143,7 +135,7 @@ LangCNOPType_e CheckOperCNOPType(const char * const FileBuf, int *str_len) {
     return NCNOP;
 }
 
-Node_t * BuildAsmTreeInternal(const char *buffer, size_t *pos, char *NameTable[]) {
+Node_t * BuildAsmTreeInternal(char *buffer, size_t *pos, BackEnd_t *BackEndStruct) {
     SkipSpaces(pos, buffer);
 
     (*pos)++; // skip '('
@@ -155,53 +147,35 @@ Node_t * BuildAsmTreeInternal(const char *buffer, size_t *pos, char *NameTable[]
         char *str = ReadQuotedString(pos, buffer);
         SkipSpaces(pos, buffer);
 
-        if (IsIntStr(str)) {
-            node = NewNode(TYPE_NUM, (LangElem_u){.num = atoi(str)}, NULL, NULL);
+        char *BufferCopy = buffer + *pos;
+        int value = strtol(buffer, &BufferCopy, 10);
+        if (BufferCopy != buffer + *pos) {
+            node = NewNode(TYPE_NUM, (LangElem_u){.num = value}, NULL, NULL);
             free(str);
         }
         else {
-            if (isdigit(buffer[*pos])) {
-                int Index = atoi(buffer + *pos);
-                if (NameTable[Index] == NULL) {
-                    node = NewNode(TYPE_VAR, (LangElem_u){.var_name = str}, NULL, NULL);
-                    NameTable[Index] = str;
-                }
-                else {
-                    node = NewNode(TYPE_VAR, (LangElem_u){.var_name = NameTable[Index]}, NULL, NULL);
-                    free(str);
-                }
-                if (Index == 0)
-                    (*pos)++;
-                else
-                    (*pos) += (1 + (int)log10(Index));
+            size_t NameTableSize = BackEndStruct->NameTableSize;
+            int VarIndex = GetVarIndexInArr(BackEndStruct->NameTable, str, NameTableSize);
 
+            if (VarIndex == -1) {
+                BackEndStruct->NameTable[NameTableSize] = str;
+                BackEndStruct->NameTableSize++;
+                VarIndex = NameTableSize;
             }
-            else
-                sassert(0, ERR_PTR_NULL, "unexpected error");
-            
-            (*pos)++;
-            if (isdigit(buffer[*pos])) {
-                int Scope = atoi(buffer + *pos);
-                node->ScopeDeep = Scope;
-                if (Scope == 0)
-                    (*pos)++;
-                else
-                    (*pos) += (1 + (int)log10(Scope));
+            else {
+                free(str);
+            }
 
-            }
+            node = NewNode(TYPE_VAR, (LangElem_u){.var_name = str}, NULL, NULL);
         }
-    }
-    else {
+    } else {
         int str_len = 0;
-        LangOperType_e OperType     = CheckOperType(buffer + *pos, &str_len);
-        LangCNOPType_e OperCNOPType = CheckOperCNOPType(buffer + *pos, &str_len);
+        LangOperType_e OperType = CheckOperType(buffer + *pos, &str_len);
 
-        if (OperCNOPType != NCNOP)
-            node = NewNode(TYPE_CNOP, (LangElem_u){.CNop = OperCNOPType}, NULL, NULL);
-        else if (OperType != NOP)
+        if (OperType != OPER_NOP)
             node = NewNode(TYPE_OP, (LangElem_u){.oper = OperType}, NULL, NULL);
 
-        (*pos) += (size_t)str_len;
+        (*pos) += (size_t) str_len;
     }
     SkipSpaces(pos, buffer);
 
@@ -218,13 +192,13 @@ Node_t * BuildAsmTreeInternal(const char *buffer, size_t *pos, char *NameTable[]
     return node;
 }
 
-Node_t * BuildAsmTree(const char *buffer, char *NameTable[], size_t NameTableSize) {
+Node_t * BuildAsmTree(const char *buffer, BackEnd_t *BackEndStruct) {
     size_t pos = 0;
-    return BuildAsmTreeInternal(buffer, &pos, NameTable);
+    return BuildAsmTreeInternal(buffer, &pos, BackEndStruct);
 }
 
 void NodeDtor(Node_t **node) {
-    sassert(node, ERR_PTR_NULL);
+    sassert(node, ERR_PTR_NULL_LANG);
 
     if (*node != NULL && (*node)->left != NULL)
         NodeDtor(&((*node)->left));
@@ -234,7 +208,7 @@ void NodeDtor(Node_t **node) {
     *node = NULL;
 }
 
- int GetVarIndexByName(char *NameTable[], size_t NameTableSize, const char *name) {
+ int GetVarIndexByName(BackEnd_t *BackEndStruct, const char *name) {
     for (int i = 0; i < NameTableSize; i++) {
         if (NameTable[i] != NULL && strcmp(NameTable[i], name) == 0)
             return i;
@@ -250,7 +224,7 @@ void PrintTab(FILE *fp, size_t tab) {
  size_t label_counter = 0;
 
  int GetVarInNameTable(char * Var, char *NameTable[]) {
-    sassert(Var, ERR_PTR_NULL);
+    sassert(Var, ERR_PTR_NULL_LANG);
 
 
     if (NameTable == NULL)
@@ -269,7 +243,7 @@ void PrintLabel(FILE *fp, const char *prefix, size_t id) {
     fprintf(fp, ":%s_%zu", prefix, id);
 }
 
-void GenInVar(FILE *fp, Node_t * node, char *NameTable[], size_t NameTableSize, bool IsFuncOp) {
+void GenInVar(FILE *fp, BackEnd_t *BackEndStruct, Node_t * node, bool IsFuncOp) {
     int Index = GetVarInNameTable(node->left->value.var_name, NameTable);
     fprintf(fp ,"    IN\n");
     if (IsFuncOp)
@@ -278,7 +252,7 @@ void GenInVar(FILE *fp, Node_t * node, char *NameTable[], size_t NameTableSize, 
         fprintf(fp, "    POPMN [%zu]\n", Index + node->ScopeDeep * NameTableSize);
 }
     
-void GenPushVar(FILE *fp, Node_t * node, char *NameTable[], size_t NameTableSize, bool IsFuncOp) {
+void GenPushVar(FILE *fp, BackEnd_t *BackEndStruct, Node_t * node, bool IsFuncOp) {
     int Index = GetVarInNameTable(node->value.var_name, NameTable);
     if (IsFuncOp)
         fprintf(fp, "    PUSHR [%zu]\n", Index + (node->ScopeDeep - 1) * NameTableSize);
@@ -286,7 +260,7 @@ void GenPushVar(FILE *fp, Node_t * node, char *NameTable[], size_t NameTableSize
         fprintf(fp, "    PUSHMN [%zu]\n", Index + node->ScopeDeep * NameTableSize);
 }
 
-void GenPopVar(FILE *fp, Node_t * node, char *NameTable[], size_t NameTableSize, bool IsFuncOp) {
+void GenPopVar(FILE *fp, BackEnd_t *BackEndStruct, Node_t * node, bool IsFuncOp) {
     int Index = GetVarInNameTable(node->value.var_name, NameTable);
 
     if (IsFuncOp)
@@ -304,20 +278,20 @@ void GenCmpJumpFalse(FILE *fp, LangOperType_e cmp_op, const char *label_prefix, 
         case LEQ:   fprintf(fp, "    JA ");  break;  // (<=)
         case MEQ:   fprintf(fp, "    JB ");  break;  // (>=)
         default:
-            sassert(0, ERR_PTR_NULL, "unexpected cmp op");
+            sassert(0, ERR_PTR_NULL_LANG, "unexpected cmp op");
     }
     PrintLabel(fp, label_prefix, label_id);
     fprintf(fp, "\n");
 }
 
-void GenCmp(FILE *fp, Node_t *cmp_node, const char *label_prefix, size_t label_id,
-                   char *NameTable[], size_t NameTableSize, bool IsFuncOp, bool IsInverse) {
+void GenCmp(FILE *fp, BackEnd_t *BackEndStruct, Node_t *cmp_node, const char *label_prefix, size_t label_id,
+            bool IsFuncOp, bool IsInverse) {
     GenExpr(fp, cmp_node->left,  NameTable, NameTableSize, IsFuncOp);
     GenExpr(fp, cmp_node->right, NameTable, NameTableSize, IsFuncOp);
     GenCmpJumpFalse(fp, cmp_node->value.oper, label_prefix, label_id, IsInverse);
 }
 
-void GenExpr(FILE *fp, Node_t *node, char *NameTable[], size_t NameTableSize, bool IsFuncOp) {
+void GenExpr(FILE *fp, BackEnd_t *BackEndStruct, Node_t *node, bool IsFuncOp) {
     if (node == NULL)
         return;
 
@@ -348,22 +322,22 @@ void GenExpr(FILE *fp, Node_t *node, char *NameTable[], size_t NameTableSize, bo
             }
             return;
         }
-        sassert(0, ERR_PTR_NULL, "cmp as expr is not supported");
+        sassert(0, ERR_PTR_NULL_LANG, "cmp as expr is not supported");
     }
 
-    sassert(0, ERR_PTR_NULL, "штмфдшв тщву ензу");
+    sassert(0, ERR_PTR_NULL_LANG, "штмфдшв тщву ензу");
 }
 
 
 
-void GenInitList(FILE *fp, Node_t *tree, char *NameTable[], size_t NameTableSize, bool IsFuncOp) {
-    Node_t *cur = tree;
+void GenInitList(FILE *fp, BackEnd_t *BackEndStruct, Node_t *Tree, bool IsFuncOp) {
+    Node_t *cur = Tree;
     while (cur != NULL) {
-        if (!CheckIfOperNext(cur, NEW_INIT, TYPE_CNOP))
+        if (!CheckIfOperNext(cur,OPER_NEW_INIT))
             break;
 
         Node_t *decl = cur->left; // VAR_DECLARATION
-        if (decl != NULL && CheckIfOperNext(decl, VAR_DECLARATION, TYPE_OP)) {
+        if (decl != NULL && CheckIfOperNext(decl,OPER_VAR_DECLARATION)) {
             GenExpr(fp, decl->right, NameTable, NameTableSize, IsFuncOp);
             GenPopVar(fp, decl->left, NameTable, NameTableSize, IsFuncOp);
         }
@@ -372,12 +346,12 @@ void GenInitList(FILE *fp, Node_t *tree, char *NameTable[], size_t NameTableSize
     }
 }
 
-void GenIf(FILE *fp, Node_t *tree, char *NameTable[], size_t NameTableSize, bool IsFuncOp) {
+void GenIf(FILE *fp, BackEnd_t *BackEndStruct, Node_t *Tree, bool IsFuncOp) {
     size_t end_id = label_counter++;
 
-    Node_t *cmp_list = tree->left;
+    Node_t *cmp_list = Tree->left;
     while (cmp_list != NULL) {
-        if (!CheckIfOperNext(cmp_list, NEW_CMP, TYPE_CNOP))
+        if (!CheckIfOperNext(cmp_list,OPER_NEW_CMP))
             break;
 
         Node_t *cmp = cmp_list->left;
@@ -385,17 +359,17 @@ void GenIf(FILE *fp, Node_t *tree, char *NameTable[], size_t NameTableSize, bool
         cmp_list = cmp_list->right;
     }
 
-    GenOpList(fp, tree->right->left, NameTable, NameTableSize, IsFuncOp);
+    GenOpList(fp, Tree->right->left, NameTable, NameTableSize, IsFuncOp);
     fprintf(fp, "JMP ");
     PrintLabel(fp, "IF_END", end_id);
     fprintf(fp, "\n");
     PrintLabel(fp, "IF_MIDDLE", end_id);
-    fprintf(fp, "\n");    GenOpList(fp, tree->right->right, NameTable, NameTableSize, IsFuncOp);
+    fprintf(fp, "\n");    GenOpList(fp, Tree->right->right, NameTable, NameTableSize, IsFuncOp);
     PrintLabel(fp, "IF_END", end_id);
     fprintf(fp, "\n");
 }
 
-void GenWhile(FILE *fp, Node_t *while_node, char *NameTable[], size_t NameTableSize, bool IsFuncOp) {
+void GenWhile(FILE *fp, BackEnd_t *BackEndStruct, Node_t *while_node,  bool IsFuncOp) {
     size_t begin_id = label_counter;
     size_t end_id   = label_counter++;
 
@@ -413,7 +387,7 @@ void GenWhile(FILE *fp, Node_t *while_node, char *NameTable[], size_t NameTableS
     fprintf(fp, "\n");
 }
 
-void GenFuncCall(FILE *fp, Node_t *call_node, char *NameTable[], size_t NameTableSize, bool IsFuncOp) {
+void GenFuncCall(FILE *fp, BackEnd_t *BackEndStruct, Node_t *call_node, bool IsFuncOp) {
     Node_t *dst = call_node->left;
     Node_t *funcwrap = call_node->right;
 
@@ -422,7 +396,7 @@ void GenFuncCall(FILE *fp, Node_t *call_node, char *NameTable[], size_t NameTabl
 
     Node_t *cur = params;
     while (cur != NULL) {
-        if (!CheckIfOperNext(cur, NEW_PARAM, TYPE_CNOP))
+        if (!CheckIfOperNext(cur,OPER_NEW_PARAM))
             break;
 
         GenExpr(fp, cur->left, NameTable, NameTableSize, IsFuncOp);
@@ -433,36 +407,36 @@ void GenFuncCall(FILE *fp, Node_t *call_node, char *NameTable[], size_t NameTabl
     GenPopVar(fp, dst, NameTable, NameTableSize, IsFuncOp);
 }
 
-void GenOut(FILE *fp, Node_t *out_node, char *NameTable[], size_t NameTableSize, bool IsFuncOp) {
+void GenOut(FILE *fp, BackEnd_t *BackEndStruct, Node_t *out_node, bool IsFuncOp) {
     GenExpr(fp, out_node->left, NameTable, NameTableSize, IsFuncOp);
     fprintf(fp, "    OUT\n");
 }
 
-void GenAssign(FILE *fp, Node_t *assign_node, char *NameTable[], size_t NameTableSize, bool IsFuncOp) {
+void GenAssign(FILE *fp, BackEnd_t *BackEndStruct, Node_t *assign_node, bool IsFuncOp) {
     GenExpr(fp, assign_node->right, NameTable, NameTableSize, IsFuncOp);
     GenPopVar(fp, assign_node->left, NameTable, NameTableSize, IsFuncOp);
 }
 
-void GenOp(FILE *fp, Node_t *tree, char *NameTable[], size_t NameTableSize, bool IsFuncOp) {
-    if (tree == NULL)
+void GenOp(FILE *fp, BackEnd_t *BackEndStruct, Node_t *Tree, bool IsFuncOp) {
+    if (Tree == NULL)
         return;
 
-    if (CheckIfOperNext(tree, NEW_INIT, TYPE_CNOP)) {
-        GenInitList(fp, tree, NameTable, NameTableSize, IsFuncOp);
+    if (CheckIfOperNext(Tree,OPER_NEW_INIT)) {
+        GenInitList(fp, Tree, NameTable, NameTableSize, IsFuncOp);
         return;
     }
 
-    if (tree->type == TYPE_OP) {
-        switch (tree->value.oper) {
-            case IF:            GenIf(fp, tree, NameTable, NameTableSize   , IsFuncOp);     return;
-            case WHILE:         GenWhile(fp, tree, NameTable, NameTableSize, IsFuncOp);     return;
-            case OUT:           GenOut(fp, tree, NameTable, NameTableSize  , IsFuncOp);     return;
-            case FUNC_CALL:     GenFuncCall(fp, tree, NameTable, NameTableSize, IsFuncOp);  return;
-            case ASSIGN:        GenAssign(fp, tree, NameTable, NameTableSize, IsFuncOp);    return;
-            case IN:            GenInVar(fp, tree, NameTable, NameTableSize, IsFuncOp);     return;
+    if (Tree->type == TYPE_OP) {
+        switch (Tree->value.oper) {
+            case IF:            GenIf(fp, Tree, NameTable, NameTableSize   , IsFuncOp);     return;
+            case WHILE:         GenWhile(fp, Tree, NameTable, NameTableSize, IsFuncOp);     return;
+            case OUT:           GenOut(fp, Tree, NameTable, NameTableSize  , IsFuncOp);     return;
+            case FUNC_CALL:     GenFuncCall(fp, Tree, NameTable, NameTableSize, IsFuncOp);  return;
+            case ASSIGN:        GenAssign(fp, Tree, NameTable, NameTableSize, IsFuncOp);    return;
+            case IN:            GenInVar(fp, Tree, NameTable, NameTableSize, IsFuncOp);     return;
             case VAR_DECLARATION: {
-                GenExpr(fp, tree->right, NameTable, NameTableSize, IsFuncOp);
-                GenPopVar(fp, tree->left, NameTable, NameTableSize, IsFuncOp);
+                GenExpr(fp, Tree->right, NameTable, NameTableSize, IsFuncOp);
+                GenPopVar(fp, Tree->left, NameTable, NameTableSize, IsFuncOp);
                 return;
             }
             default:
@@ -470,41 +444,41 @@ void GenOp(FILE *fp, Node_t *tree, char *NameTable[], size_t NameTableSize, bool
         }
     }
     else 
-        SYNTAX_ERROR(tree, "нету валидной операции");
+        SYNTAX_ERROR(Tree, "нету валидной операции");
 
-    if (tree->type == TYPE_OP || tree->type == TYPE_NUM || tree->type == TYPE_VAR) {
-        GenExpr(fp, tree, NameTable, NameTableSize, IsFuncOp);
+    if (Tree->type == TYPE_OP || Tree->type == TYPE_NUM || Tree->type == TYPE_VAR) {
+        GenExpr(fp, Tree, NameTable, NameTableSize, IsFuncOp);
         return;
     }
 }
 
-void GenOpList(FILE *fp, Node_t *tree, char *NameTable[], size_t NameTableSize, bool IsFuncOp) {
-    Node_t *cur = tree;
+void GenOpList(FILE *fp, BackEnd_t *BackEndStruct, Node_t *Tree, bool IsFuncOp) {
+    Node_t *cur = Tree;
     while (cur != NULL) {
-        if (!CheckIfOperNext(cur, NEW_OP, TYPE_CNOP))
+        if (!CheckIfOperNext(cur,OPER_NEW_OP))
             break;
         GenOp(fp, cur->left, NameTable, NameTableSize, IsFuncOp);
         cur = cur->right;
     }
 }
 
-void GenFuncDef(FILE *fp, Node_t *tree, char *NameTable[], size_t NameTableSize) {
-    fprintf(fp, ":%s {\n", tree->value.var_name);
+void GenFuncDef(FILE *fp, BackEnd_t *BackEndStruct, Node_t *Tree) {
+    fprintf(fp, ":%s {\n", Tree->value.var_name);
 
-    Node_t *func_body = tree->left;
+    Node_t *func_body = Tree->left;
     int param_cnt = 0;
     int ParamIndex[NameTableSize];
 
     Node_t *params = func_body->left;
     while (params != NULL) {
-        if (!CheckIfOperNext(params, NEW_PARAM, TYPE_CNOP))
+        if (!CheckIfOperNext(params,OPER_NEW_PARAM))
             break;
 
         Node_t *var = params->left;
         params = params->right;
 
         int idx = GetVarInNameTable(var->value.var_name, NameTable);
-        sassert(idx >= 0, ERR_PTR_NULL);
+        sassert(idx >= 0, ERR_PTR_NULL_LANG);
         ParamIndex[param_cnt++] = idx;
     }
 
@@ -514,36 +488,41 @@ void GenFuncDef(FILE *fp, Node_t *tree, char *NameTable[], size_t NameTableSize)
 
     GenOpList(fp, func_body->right, NameTable, NameTableSize, true);
 
-    GenExpr(fp, tree->right, NameTable, NameTableSize, true);
+    GenExpr(fp, Tree->right, NameTable, NameTableSize, true);
     fprintf(fp, "    RET\n");
     fprintf(fp, "}\n\n");
 }
 
 
-void GenFuncList(FILE *fp, Node_t *tree, char *NameTable[], size_t NameTableSize) {
-    while (tree != NULL) {
-        if (!CheckIfOperNext(tree, FUNC, TYPE_CNOP))
+void GenFuncList(FILE *fp, BackEnd_t *BackEndStruct, Node_t *Tree) {
+    while (Tree != NULL) {
+        if (!CheckIfOperNext(Tree, OPER_FUNC_DECL_NAME))
             break;
 
-        GenFuncDef(fp, tree->left, NameTable, NameTableSize);
-        tree = tree->right;
+        GenFuncDef(fp, BackEndStruct, Tree->left);
+        Tree = Tree->right;
     }
 }
 
-void PrintProgramAssemblyFromTree(FILE *fp, Node_t *tree, char *NameTable[], size_t NameTableSize) {
-    sassert(fp, ERR_PTR_NULL);
-    sassert(tree, ERR_PTR_NULL);
+bool CheckIfOperNext(Node_t *Tree, LangOperType_e oper) {
+    return (ISOPER &&  (Tree->value.oper == (LangOperType_e) oper ||
+                        Tree->value.oper == OPER_NOP));
+}
 
-    if (CheckIfOperNext(tree, PROGRAM_START, TYPE_CNOP)) {
+void PrintProgramAssemblyFromTree(FILE *fp, BackEnd_t *BackEndStruct, Node_t *Tree) {
+    sassert(fp,             ERR_PTR_NULL_LANG);
+    sassert(BackEndStruct,  ERR_PTR_NULL_LANG);
+
+    if (CheckIfOperNext(Tree, OPER_PROGRAM_START)) {
         fprintf(fp, "CALL :main\n\n");
 
         // funcs
-        if (tree->left != NULL)
-            GenFuncList(fp, tree->left, NameTable, NameTableSize);
+        if (Tree->left != NULL)
+            GenFuncList(fp, BackEndStruct, Tree->left);
 
         // main
         fprintf(fp, ":main {\n");
-        GenOpList(fp, tree->right, NameTable, NameTableSize, false);
+        GenOpList(fp, BackEndStruct, Tree->right, false);
         fprintf(fp, "    HLT\n");
         fprintf(fp, "}\n");
         return;
@@ -551,34 +530,49 @@ void PrintProgramAssemblyFromTree(FILE *fp, Node_t *tree, char *NameTable[], siz
     SYNTAX_ERROR(Tree, "нету начала программы!");
 }
 
+#define BackEndCtor(Name) \
+    BackEnd_t *Name = CALLOC_WITH_TYPE(1, BackEnd_t);\
+    BackEndCtor_internal(Name);
+
+void BackEndCtor_internal(BackEnd_t *BackEndStruct) {
+    init_stack(stk, START_INIT_SIZE);
+    BackEndStruct->ScopeBorders     = stk;
+
+    BackEndStruct->NameTableSize        = 0;
+    BackEndStruct->NameTableCapacity    = START_INIT_SIZE;
+    BackEndStruct->ScopeSize            = 0;
+    BackEndStruct->ScopeCapacity        = START_INIT_SIZE;
+
+    BackEndStruct->NameTable            = CALLOC_WITH_TYPE(START_INIT_SIZE, char *);
+    sassert(BackEndStruct->NameTable,   ERR_PTR_NULL_LANG);
+
+    BackEndStruct->Scope                = CALLOC_WITH_TYPE(START_INIT_SIZE, char *);
+    sassert(BackEndStruct->Scope,       ERR_PTR_NULL_LANG);
+
+    BackEndStruct->RegexTable           = CALLOC_WITH_TYPE(NumOfRegex, int64_t);
+    sassert(BackEndStruct->RegexTable,  ERR_PTR_NULL_LANG);
+}
 
 void CompileFile(const char * InputFile, const char * OutputFile) {
     FILE *fp_input = fopen(InputFile, "r");
-    sassert(fp_input, ERR_PTR_NULL);
+    sassert(fp_input, ERR_PTR_NULL_LANG);
 
     size_t FileSize = get_file_size(fp_input);
-    int NameTableSize = 0;
-    size_t ReadValNum = fscanf(fp_input, "%d\n", &NameTableSize);
-    sassert(ReadValNum == 1, ERR_PTR_NULL,
-            "неправильный формат файлы \"%s\"", InputFile);
-
     char *buffer = get_buffer_from_file(fp_input, FileSize);
-
     fclose(fp_input);
 
-    char *NameTable[NameTableSize] = {};
-    Node_t * Tree = BuildAsmTree(buffer, NameTable, NameTableSize);
+    BackEndCtor(BackEndStruct);
+    Node_t * Tree = BuildAsmTree(buffer, BackEndStruct);
     free(buffer);
 
-    create_tree_graph(Tree);
-
+    create_Tree_graph(Tree);
     FILE *fp_output = fopen(OutputFile, "w");
-    sassert(fp_output, ERR_PTR_NULL, "не удалось открыть %s", OutputFile);
+    sassert(fp_output, ERR_PTR_NULL_LANG, "не удалось открыть %s", OutputFile);
 
-    PrintProgramAssemblyFromTree(fp_output, Tree, NameTable, NameTableSize);
+    PrintProgramAssemblyFromTree(fp_output, BackEndStruct, BackEndStruct->Tree);
 
-    NodeDtor(&Tree);
     fclose(fp_output);
+    NodeDtor(&Tree);
 }
 
 int main(int argc, char *argv[]) {

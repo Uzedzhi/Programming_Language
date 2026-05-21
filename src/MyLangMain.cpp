@@ -6,7 +6,7 @@ enum {
     INPUT_FLAG      = 0,
     OUTPUT_FLAG     = 1,
     ASSEMBLY_FLAG   = 2,
-    TREE_FLAG       = 3
+    OPER_FLAG       = 3
 };
 static const char *AllFlagsStr[]        = {"input", "output", "assembly", "tree"};
 static const size_t AllFlagsCount       = sizeof(AllFlagsStr) / sizeof(AllFlagsStr[0]);
@@ -34,11 +34,11 @@ int main(int argc, char *argv[]) {
     const char *inputFile       = FlagParser[INPUT_FLAG].FlagValues[INPUT_FLAG];
 
     bool MakeAssembly           = FlagParser[ASSEMBLY_FLAG].IsActive;
-    bool MakeTree               = FlagParser[TREE_FLAG].IsActive;
+    bool MakeTree               = FlagParser[OPER_FLAG].IsActive;
     bool MakeOutput             = FlagParser[OUTPUT_FLAG].IsActive;
     const char *AssemblyFile    = (MakeAssembly == true)    ? FlagParser[ASSEMBLY_FLAG].FlagValues[0]   : "outassembly.txt";
     const char *OutputFile      = (MakeOutput == true)      ? FlagParser[OUTPUT_FLAG].FlagValues[0]     : "out.txt";
-    const char *TreeFile        = (MakeTree == true)        ? FlagParser[TREE_FLAG].FlagValues[0]       : "outtree.txt";
+    const char *TreeFile        = (MakeTree == true)        ? FlagParser[OPER_FLAG].FlagValues[0]       : "outtree.txt";
 
     char command[MAX_STR_SIZE] = {};
     snprintf(command, sizeof(command), "./bin/Lang %s %s", inputFile, TreeFile);

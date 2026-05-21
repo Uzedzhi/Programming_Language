@@ -11,7 +11,7 @@ void PrintSiteHeader() {
     if (count_graph_files != 0)
         return;
     FILE * fp = fopen(dump_site_name, "w");
-    sassert(fp, ERR_PTR_NULL);
+    sassert(fp, ERR_PTR_NULL_LANG);
     fprintf(fp, "<!DOCTYPE html>\n"
                 "<html lang=\"ru\">\n"
                 "<head>\n"
@@ -60,10 +60,10 @@ void print_divider(FILE * fp) {
 }
 
 void print_to_html(Node_t *tree, bool needs_division, const char * str) {
-    sassert(tree,   ERR_PTR_NULL);
+    sassert(tree,   ERR_PTR_NULL_LANG);
 
     FILE * fp = fopen(dump_site_name, "a");
-    sassert(fp, ERR_PTR_NULL);
+    sassert(fp, ERR_PTR_NULL_LANG);
 
     if (needs_division == true)
         print_divider(fp);
@@ -94,9 +94,6 @@ void GraphDumpPrintNode(FILE *fp, Node_t *node) {
         case TYPE_VAR:
             fprintf(fp, "<TR><TD COLSPAN=\"2\"> <FONT POINT-SIZE=\"16\" COLOR=\"#4d545eff\"> val = </FONT> <FONT POINT-SIZE=\"18\">%s</FONT></TD></TR>\n", node->value.var_name);
             break;
-        case TYPE_CNOP:
-            fprintf(fp, "<TR><TD COLSPAN=\"2\"> <FONT POINT-SIZE=\"16\" COLOR=\"#4d545eff\"> val = </FONT> <FONT POINT-SIZE=\"18\">%s</FONT></TD></TR>\n", AllOperCNOPDumpStr[node->value.CNop]);
-            break;
     }
     fprintf(fp, "<TR><TD COLSPAN=\"2\"> <FONT POINT-SIZE=\"14\" COLOR=\"#64748B\">address: %p</FONT> </TD></TR>\n", node);
     fprintf(fp, "<TR>\n");
@@ -114,12 +111,12 @@ void GraphDumpPrintNode(FILE *fp, Node_t *node) {
 }
 
 LangErr_e create_tree_graph(Node_t *tree) {
-    sassert(tree, ERR_PTR_NULL);
+    sassert(tree, ERR_PTR_NULL_LANG);
 
     int counter = 0;
 
     FILE * fp = fopen(dump_graph_txt_file_name, "w");
-    sassert(fp, ERR_PTR_NULL);
+    sassert(fp, ERR_PTR_NULL_LANG);
 
     fprintf(fp, "digraph {\n"
                 "rankdir=TB\n"
@@ -148,7 +145,7 @@ LangErr_e create_tree_graph(Node_t *tree) {
 LangErr_e print_nodes_to_dump_file(Node_t * node, Node_t * tree, FILE *fp, dirType type_of_direction, int *counter) {
     if (node == NULL)
         return OK;
-    sassert(fp,     ERR_PTR_NULL);
+    sassert(fp,     ERR_PTR_NULL_LANG);
 
     GraphDumpPrintNode(fp, node);
     (*counter)++;

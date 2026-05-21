@@ -17,9 +17,8 @@
 
 #ifdef DEBUG
 #define DUMP_LANGNODE(node, str) {\
-    create_tree_graph(node);\
-    print_to_html(node, false, str);\
-    PRINT_CUR_TYPE_AND_OP(NodeArr, str);\
+    create_tree_graph(*node);\
+    print_to_html(*node, false, str);\
 }
 
 #define DUMPNODE(node, need_division, ...) {                                \

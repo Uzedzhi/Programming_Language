@@ -17,8 +17,7 @@ bool is_file_exists(const char *file_name)
     return 1;
 }
 
-bool is_same(double a, double b)
-{
+bool is_same(double a, double b) {
     return abs(a - b) < FLT_ERR;
 }
 

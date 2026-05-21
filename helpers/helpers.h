@@ -12,7 +12,7 @@
 #endif // level_of_check
 
 typedef const char * const string;
-typedef double stack_var_t;
+typedef size_t stack_var_t;
 const size_t CMD_RANGE          = 10;
 const size_t MAX_ARR_SIZE       = 500;
 const size_t MAX_STR_SIZE       = 300;
