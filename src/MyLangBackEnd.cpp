@@ -3,11 +3,11 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "MyLangBackEnd.h"
-#include "better_output.h"
-#include "sassert.h"
-#include "MyLang.h"
-#include "MyLangDump.h"
+#include "../includes/MyLangBackEnd.hpp"
+#include "../my_libs/better_output.hpp"
+#include "../my_libs/sassert.hpp"
+#include "../includes/MyLang.hpp"
+#include "../includes/MyLangDump.hpp"
 
 #define ISVAR   Tree->type == TYPE_VAR
 #define ISSTR   Tree->type == TYPE_STR
@@ -148,7 +148,7 @@ Node_t * BuildAsmTreeInternal(char *buffer, size_t *pos, BackEnd_t *BackEndStruc
         SkipSpaces(pos, buffer);
 
         char *BufferCopy = buffer + *pos;
-        int value = strtol(buffer, &BufferCopy, 10);
+        list_el_t value = strtol(buffer, &BufferCopy, 10);
         if (BufferCopy != buffer + *pos) {
             node = NewNode(TYPE_NUM, (LangElem_u){.num = value}, NULL, NULL);
             free(str);

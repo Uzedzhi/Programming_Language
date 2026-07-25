@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../stack/stack.h"
+#include "../stack/stack.hpp"
 
 typedef const char * const string_t;
 
@@ -16,7 +16,6 @@ const size_t START_INIT_SIZE    = 100;
 const size_t MAX_STR_VAR        = 7;
 const size_t MAX_SIZE_T         = 0xffffffffffull;
 const size_t POISON             = 0x2134256754321123;
-
 
 #define ASM_OPER_TYPES(n) \
     n(ASM_IF,               "IF"    )\

@@ -2,7 +2,7 @@
 #define PROGRAMTOASM_H
 
 #include <stdint.h>
-#include "MyLang.h"
+#include "MyLang.hpp"
 
 typedef struct BackEnd_t {
     Node_t  *Tree;

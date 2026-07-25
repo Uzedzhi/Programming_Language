@@ -1,9 +1,9 @@
 #include <time.h>
 #include <stdio.h>
 
-#include "MyLang.h"
-#include "MyLangDump.h"
-#include "../my_libs/sassert.h"
+#include "MyLang.hpp"
+#include "MyLangDump.hpp"
+#include "my_libs/sassert.hpp"
 
 static int count_graph_files = 0;
 

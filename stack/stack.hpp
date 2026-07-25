@@ -5,10 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include <math.h>
 
-#include "sassert.h"
-#include "../helpers/helpers.h"
+#include "../my_libs/sassert.hpp"
+#include "../helpers/helpers.hpp"
 
 #define push_error(ERROR_CODE, ...) \
     sassert(0, ERROR_CODE, ##__VA_ARGS__);

@@ -5,11 +5,11 @@
 #include <locale.h>
 #include <stdint.h>
 
-#include "MyLang.h"
-#include "MyLangSyntax.h"
-#include "MyLangDump.h"
-#include "sassert.h"
-#include "../stack/stack.h"
+#include "../includes/MyLang.hpp"
+#include "../includes/MyLangSyntax.hpp"
+#include "../includes/MyLangDump.hpp"
+#include "../my_libs/sassert.hpp"
+#include "../stack/stack.hpp"
 
 void ArrayOfLexemsCtor_internal(LexArr_t * Arr) {
     Arr->NodeArr = CALLOC_WITH_TYPE(START_INIT_SIZE, Node_t);
@@ -26,8 +26,10 @@ void ArrayOfLexemsCtor_internal(LexArr_t * Arr) {
 
     Arr->ScopeSize          = 0;
     Arr->ScopeCapacity      = START_INIT_SIZE;
+
     Arr->NameTableSize      = 0;
     Arr->NameTableCapacity  = START_INIT_SIZE;
+
     Arr->NodeArrSize        = 0;
     Arr->NodeArrCapacity    = START_INIT_SIZE;
 }
@@ -233,7 +235,7 @@ LangErr_e FillArrayOfLexems(LexArr_t *LexArr, const char * file_name) {
 
         // NUM
         char * CurPos = FileBuf + Pos;
-        int value = strtol(FileBuf + Pos, &CurPos, 10);
+        list_el_t value = strtol(FileBuf + Pos, &CurPos, 10);
         if (CurPos != FileBuf + Pos) {
             Pos = CurPos - FileBuf;
             LexArr->NodeArr[(LexArr->NodeArrSize)++] = {TYPE_NUM, {.num = value}, NULL, NULL};

@@ -1,7 +1,7 @@
 #include <cstdint>
-#include "../stack/stack.h"
-#include "../helpers/helpers.h"
-#include "error_manage.h"
+#include "../stack/stack.hpp"
+#include "../helpers/helpers.hpp"
+#include "error_manage.hpp"
 
 bool is_file_exists(const char *file_name)
 {

@@ -4,10 +4,10 @@
 #include <ctype.h>
 #include <time.h>
 
-#include "error_manage.h"
-#include "sassert.h"
-#include "assembly.h"
-#include "../helpers/helpers.h"
+#include "../my_libs/error_manage.hpp"
+#include "../my_libs/sassert.hpp"
+#include "assembly.hpp"
+#include "../helpers/helpers.hpp"
 
 error_t error = {};
 
@@ -41,15 +41,14 @@ int strcmp_until(const char *str1, const char *str2)
     return *str1 - *str2;
 }
 
-calcInst_t get_num_of_command(asm_t *assembly, char *command)
-{
+calcInst_t get_num_of_command(asm_t *assembly, char *command) {
+    
     sassert(command, ERR_PTR_NULL);
 
     unsigned long cur_hash = sdbm(command);
     for (size_t i = 0; i < num_of_commands; i++)
     {
-        if (assembly->hashes_of_cmd[i] == cur_hash)
-        {
+        if (assembly->hashes_of_cmd[i] == cur_hash) {
             return (calcInst_t)i;
         }
     }
@@ -85,6 +84,60 @@ error_t get_label_index(char *file_buffer, asm_t *assembly, size_t *label_value_
     unsigned long cur_hash = sdbm(file_buffer + 1);
     for (size_t i = 0; i < assembly->label_capacity; i++)
     {
+        if (cur_hash == assembly->labels[i].label_hash)
+        {
+            *label_value_index = i;
+            return error;
+        }
+    
+        if (cur_hash == assembly->labels[i].label_hash)
+        {
+            *label_value_index = i;
+            return error;
+        }
+    
+        if (cur_hash == assembly->labels[i].label_hash)
+        {
+            *label_value_index = i;
+            return error;
+        }
+    
+        if (cur_hash == assembly->labels[i].label_hash)
+        {
+            *label_value_index = i;
+            return error;
+        }
+    
+        if (cur_hash == assembly->labels[i].label_hash)
+        {
+            *label_value_index = i;
+            return error;
+        }
+    
+        if (cur_hash == assembly->labels[i].label_hash)
+        {
+            *label_value_index = i;
+            return error;
+        }
+    
+        if (cur_hash == assembly->labels[i].label_hash)
+        {
+            *label_value_index = i;
+            return error;
+        }
+    
+        if (cur_hash == assembly->labels[i].label_hash)
+        {
+            *label_value_index = i;
+            return error;
+        }
+    
+        if (cur_hash == assembly->labels[i].label_hash)
+        {
+            *label_value_index = i;
+            return error;
+        }
+    
         if (cur_hash == assembly->labels[i].label_hash)
         {
             *label_value_index = i;
@@ -243,7 +296,8 @@ error_t scan_header(asm_t *assembly)
     {
 
         assembly->video.is_video = true;
-        size_t scanned_cnt = sscanf(assembly->file_buffer, "%*[^\n]\n; width = %zu, height = %zu, fps = %d, has audio = %d\n", &(assembly->video.width), &(assembly->video.height), &(assembly->video.fps), &(assembly->video.has_audio));
+        size_t scanned_cnt = sscanf(assembly->file_buffer, "%*[^\n]\n; width = %zu, height = %zu, fps = %zu, has audio = %\n",
+                                  &(assembly->video.width), &(assembly->video.height), &(assembly->video.fps), &(assembly->video.has_audio));
         if (scanned_cnt != 4)
         {
             add_error(ERR_INCORRECT_VIDEO_HEADER, "none");

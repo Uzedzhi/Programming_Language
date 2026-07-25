@@ -1,7 +1,7 @@
 #ifndef TREEDUMP_H
 #define TREEDUMP_H
 
-#include "MyLang.h"
+#include "MyLang.hpp"
 #include <stdio.h>
 
 #ifdef DEBUG

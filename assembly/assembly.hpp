@@ -1,7 +1,8 @@
 #ifndef assembly_h
 #define assembly_h
 
-#include "../helpers/helpers.h"
+#include "../helpers/helpers.hpp"
+#include "../my_libs/error_manage.hpp"
 
 #define die() \
     die_internal(__FILE__, __func__, __LINE__);

@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "error_manage.h"
 
 #define DEBUG_FILE_NAME "debug_file.txt"
 

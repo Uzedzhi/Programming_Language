@@ -1,67 +1,121 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../my_libs/FlagParser.h"
+#include <getopt.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
-enum {
+#include "../my_libs/sassert.hpp"
+
+const size_t MAX_STR_SIZE       = 300;
+const size_t NUM_OF_FILE_NAMES  = 4;
+
+typedef const char * const string;
+
+void print_help(char * str) {
+    printf("Usage: %s [-h|--help] [-i|--input <file_name>] [-a|--assembly <file_name>][-t|--tree <file_name>]\n", str);
+}
+
+enum FlagErr_t {
+    ERR_PTR_NULL        = -1,
+    OK                  = 0,
+    ERR_INVALID_FLAGS   = 1,
+    ERR_COMMAND_FAILED  = 2,
+    ERR_FATAL_ERROR     = 3
+};
+
+enum FlagNames {
     INPUT_FLAG      = 0,
     OUTPUT_FLAG     = 1,
     ASSEMBLY_FLAG   = 2,
-    OPER_FLAG       = 3
+    TREE_FLAG       = 3
 };
-static const char *AllFlagsStr[]        = {"input", "output", "assembly", "tree"};
-static const size_t AllFlagsCount       = sizeof(AllFlagsStr) / sizeof(AllFlagsStr[0]);
-static const int AllFlagsNumValues[]    = {1, 1, 1, 1};
-static const size_t MAX_STR_SIZE        = 300;
 
+FlagErr_t ExecuteProgram(string program, string file1, string file2) {
+    sassert(program, ERR_PTR_NULL);
+    sassert(file1, ERR_PTR_NULL);
+    sassert(file2, ERR_PTR_NULL);
 
-void FreeFlags(Flag_t *FlagParser) {
-    for (size_t i = 0; i < AllFlagsCount; i++) {
-        free(FlagParser[i].FlagValues);
+    pid_t pid = fork();
+    if (pid < 0) { // failed
+        return ERR_COMMAND_FAILED;
+    } else if (pid == 0) { // child
+        char buf[MAX_STR_SIZE] = {};
+        snprintf(buf, MAX_STR_SIZE - 1, "./bin/%s", program);
+
+        char *argv[] = {buf, (char *) file1, (char *) file2, NULL};
+        execvp(argv[0], argv);
+
+        // if return then error
+        exit(ERR_COMMAND_FAILED);
+    } else { // parent
+        int status = 0;
+        waitpid(pid, &status, 0);
+
+        if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+            return OK;
+        }
+
+        return ERR_COMMAND_FAILED;
     }
 }
 
 int main(int argc, char *argv[]) {
-    FlagParseCtor(FlagParser, AllFlagsCount, AllFlagsStr, AllFlagsNumValues);
-    int parseRes = ParseAllFlags(FlagParser, argc, argv, AllFlagsCount, AllFlagsStr, AllFlagsNumValues);
-    if (parseRes != 0) {
-        for (size_t i = 0; i < AllFlagsCount; i++) free(FlagParser[i].FlagValues);
-        return -1;
-    }
-    if (!FlagParser[0].IsActive) {
-        printf("введите файл для компиляции");
-        return -1;
-    }
-    const char *inputFile       = FlagParser[INPUT_FLAG].FlagValues[INPUT_FLAG];
+    int opt;
+    
+    static struct option long_options[] = {
+        {"input",       required_argument, 0, 'i'},
+        {"output",      required_argument, 0, 'o'},
+        {"assembly",    required_argument, 0, 'a'},
+        {"tree",        required_argument, 0, 't'},
+        {"help",        required_argument, 0, 'h'},
+        {0, 0, 0, 0}
+    };
 
-    bool MakeAssembly           = FlagParser[ASSEMBLY_FLAG].IsActive;
-    bool MakeTree               = FlagParser[OPER_FLAG].IsActive;
-    bool MakeOutput             = FlagParser[OUTPUT_FLAG].IsActive;
-    const char *AssemblyFile    = (MakeAssembly == true)    ? FlagParser[ASSEMBLY_FLAG].FlagValues[0]   : "outassembly.txt";
-    const char *OutputFile      = (MakeOutput == true)      ? FlagParser[OUTPUT_FLAG].FlagValues[0]     : "out.txt";
-    const char *TreeFile        = (MakeTree == true)        ? FlagParser[OPER_FLAG].FlagValues[0]       : "outtree.txt";
-
-    char command[MAX_STR_SIZE] = {};
-    snprintf(command, sizeof(command), "./bin/Lang %s %s", inputFile, TreeFile);
-    if (system(command) != 0) {
-        FreeFlags(FlagParser);
-        return -1;
-    }
-
-    snprintf(command, sizeof(command), "./bin/ProgramToAsm %s %s", TreeFile, AssemblyFile);
-    if (system(command) != 0) {
-        FreeFlags(FlagParser);
-        return -1;
-    }
-
-    snprintf(command, sizeof(command), "./bin/Assembly %s %s", AssemblyFile, OutputFile);
-    if (system(command) != 0) {
-        FreeFlags(FlagParser);
-        return -1;
+    char *values[NUM_OF_FILE_NAMES] = {};
+    while ((opt = getopt_long(argc, argv, "hi:o:a:t:", long_options, NULL)) != -1) {
+        switch (opt) {
+            case 'h':
+                print_help(argv[0]);
+                return OK;
+            case 'i':
+                values[INPUT_FLAG]      = optarg;
+                break;
+            case 'o':
+                values[OUTPUT_FLAG]     = optarg;
+                break;
+            case 'a':
+                values[ASSEMBLY_FLAG]   = optarg;
+                break;
+            case 't':
+                values[TREE_FLAG]       = optarg;
+                break;
+            default:
+                exit(ERR_FATAL_ERROR);
+        }
     }
 
-    if (!MakeAssembly) remove(AssemblyFile);
-    if (!MakeTree) remove(TreeFile);
+    int count = 0;
+    for (int i = optind; i < argc && i < optind + NUM_OF_FILE_NAMES; i++) {
+        if (values[count] == NULL)
+            values[count] = argv[i];
+        count++;
+    }
 
-    FreeFlags(FlagParser);
-    return 0;
+    RET_ASSERT(values[INPUT_FLAG], ERR_INVALID_FLAGS, "укажите имя файла для компиляции");
+    
+    bool MakeAssembly           = values[ASSEMBLY_FLAG];
+    bool MakeTree               = values[TREE_FLAG];
+    const char *InputFile       = values[INPUT_FLAG];
+    const char *TreeFile        = (values[TREE_FLAG])        ? values[TREE_FLAG]       : "tree.txt";
+    const char *OutputFile      = (values[OUTPUT_FLAG])      ? values[OUTPUT_FLAG]     : "a.out";
+    const char *AssemblyFile    = (values[ASSEMBLY_FLAG])    ? values[ASSEMBLY_FLAG]   : "asm.asm";
+
+    RET_ASSERT(ExecuteProgram("Lang",          InputFile,      TreeFile)        == OK, ERR_COMMAND_FAILED, "модуль Lang завершился с ошибкой!");
+    RET_ASSERT(ExecuteProgram("Assembly",      AssemblyFile,   OutputFile)      == OK, ERR_COMMAND_FAILED, "модуль Assembly завершился с ошибкой!");
+    RET_ASSERT(ExecuteProgram("ProgramToAsm",  TreeFile,       AssemblyFile)    == OK, ERR_COMMAND_FAILED, "модуль ProgramToAsm завершился с ошибкой!");
+
+    if (!MakeAssembly)  remove(AssemblyFile);
+    if (!MakeTree)      remove(TreeFile);
+
+    return OK;
 }

@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include "MyLang.h"
+#include "MyLang.hpp"
 
 
 #define PRINT_CUR_TYPE_AND_OP(NodeArr, str) \

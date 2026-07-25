@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "../my_libs/sassert.h"
-#include "MyLangSyntax.h"
-#include "MyLang.h"
-#include "MyLangDump.h"
+#include "my_libs/sassert.hpp"
+#include "MyLangSyntax.hpp"
+#include "MyLang.hpp"
+#include "MyLangDump.hpp"
 
 #define ISVAR   (**NodeArr).type == TYPE_VAR
 #define ISSTR   (**NodeArr).type == TYPE_STR

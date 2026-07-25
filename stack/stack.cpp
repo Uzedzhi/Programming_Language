@@ -4,8 +4,8 @@
 #include <math.h>
 #include <cstdint>
 
-#include "../stack/stack.h"
-#include "../helpers/helpers.h"
+#include "../stack/stack.hpp"
+#include "../helpers/helpers.hpp"
 
 static int count = 1;
 
