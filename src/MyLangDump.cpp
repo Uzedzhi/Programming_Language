@@ -1,9 +1,9 @@
 #include <time.h>
 #include <stdio.h>
 
-#include "MyLang.hpp"
-#include "MyLangDump.hpp"
-#include "my_libs/sassert.hpp"
+#include "../includes/MyLangVars.hpp"
+#include "../includes/MyLangDump.hpp"
+#include "../my_libs/sassert.hpp"
 
 static int count_graph_files = 0;
 
@@ -11,7 +11,7 @@ void PrintSiteHeader() {
     if (count_graph_files != 0)
         return;
     FILE * fp = fopen(dump_site_name, "w");
-    sassert(fp, ERR_PTR_NULL_LANG);
+    sassert(fp, ERR_PTR_NULL);
     fprintf(fp, "<!DOCTYPE html>\n"
                 "<html lang=\"ru\">\n"
                 "<head>\n"
@@ -60,10 +60,10 @@ void print_divider(FILE * fp) {
 }
 
 void print_to_html(Node_t *tree, bool needs_division, const char * str) {
-    sassert(tree,   ERR_PTR_NULL_LANG);
+    sassert(tree,   ERR_PTR_NULL);
 
     FILE * fp = fopen(dump_site_name, "a");
-    sassert(fp, ERR_PTR_NULL_LANG);
+    sassert(fp, ERR_PTR_NULL);
 
     if (needs_division == true)
         print_divider(fp);
@@ -89,11 +89,16 @@ void GraphDumpPrintNode(FILE *fp, Node_t *node) {
             fprintf(fp, "<TR><TD COLSPAN=\"2\"> <FONT POINT-SIZE=\"16\" COLOR=\"#4d545eff\"> val = </FONT> <FONT POINT-SIZE=\"18\">%d</FONT></TD></TR>\n", node->value.num);
             break;
         case TYPE_OP:
-            fprintf(fp, "<TR><TD COLSPAN=\"2\"> <FONT POINT-SIZE=\"16\" COLOR=\"#4d545eff\"> val = </FONT> <FONT POINT-SIZE=\"18\">%s</FONT></TD></TR>\n", AllOperDumpStr[node->value.oper]);
+            fprintf(fp, "<TR><TD COLSPAN=\"2\"> <FONT POINT-SIZE=\"16\" COLOR=\"#4d545eff\"> val = </FONT> <FONT POINT-SIZE=\"18\">%s</FONT></TD></TR>\n", AllOper[node->value.oper].Dump);
             break;
         case TYPE_VAR:
             fprintf(fp, "<TR><TD COLSPAN=\"2\"> <FONT POINT-SIZE=\"16\" COLOR=\"#4d545eff\"> val = </FONT> <FONT POINT-SIZE=\"18\">%s</FONT></TD></TR>\n", node->value.var_name);
             break;
+        default:
+            fprintf(fp, "unsopported type: TYPE_STR\n");
+            break;
+
+
     }
     fprintf(fp, "<TR><TD COLSPAN=\"2\"> <FONT POINT-SIZE=\"14\" COLOR=\"#64748B\">address: %p</FONT> </TD></TR>\n", node);
     fprintf(fp, "<TR>\n");
@@ -110,13 +115,13 @@ void GraphDumpPrintNode(FILE *fp, Node_t *node) {
                 "}\n");
 }
 
-LangErr_e create_tree_graph(Node_t *tree) {
-    sassert(tree, ERR_PTR_NULL_LANG);
+LangErr_t create_tree_graph(Node_t *tree) {
+    sassert(tree, ERR_PTR_NULL);
 
     int counter = 0;
 
     FILE * fp = fopen(dump_graph_txt_file_name, "w");
-    sassert(fp, ERR_PTR_NULL_LANG);
+    sassert(fp, ERR_PTR_NULL);
 
     fprintf(fp, "digraph {\n"
                 "rankdir=TB\n"
@@ -130,7 +135,7 @@ LangErr_e create_tree_graph(Node_t *tree) {
     GraphDumpPrintNode(fp, tree);
 
     int count = 0;
-    print_nodes_to_dump_file(tree, tree, fp, NO_DIRECTION, &count);
+    print_nodes_to_dump_file(tree, tree, fp, &count);
     fprintf(fp, "}");
     fclose(fp);
 
@@ -142,20 +147,20 @@ LangErr_e create_tree_graph(Node_t *tree) {
     return OK;
 }
 
-LangErr_e print_nodes_to_dump_file(Node_t * node, Node_t * tree, FILE *fp, dirType type_of_direction, int *counter) {
+LangErr_t print_nodes_to_dump_file(Node_t * node, Node_t * tree, FILE *fp, int *counter) {
     if (node == NULL)
         return OK;
-    sassert(fp,     ERR_PTR_NULL_LANG);
+    sassert(fp,     ERR_PTR_NULL);
 
     GraphDumpPrintNode(fp, node);
     (*counter)++;
     if (node->left != NULL) {
         fprintf(fp, "tree_node_info%p:left->tree_node_info%p[color=\"#2563eb\", label=\"L\", fontcolor=\"#0000ff\" , minlen=2]\n", node, node->left);
-        print_nodes_to_dump_file(node->left, tree, fp, LEFT_DIRECTION, counter);
+        print_nodes_to_dump_file(node->left, tree, fp, counter);
     }
     if (node->right != NULL) {
         fprintf(fp, "tree_node_info%p:right->tree_node_info%p[color=\"#db2777\", label=\"R\", fontcolor=\"#ff0000\" , minlen=2]\n", node, node->right);
-        print_nodes_to_dump_file(node->right, tree, fp, RIGHT_DIRECTION, counter);
+        print_nodes_to_dump_file(node->right, tree, fp, counter);
     }
 
     return OK;

@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#include "../my_libs/sassert.hpp"
+#include "../MyLibs/sassert.hpp"
 
 const size_t MAX_STR_SIZE       = 300;
 const size_t NUM_OF_FILE_NAMES  = 4;

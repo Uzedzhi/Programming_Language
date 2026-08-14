@@ -31,20 +31,6 @@ void nullify_anything_extra(char *buffer, size_t file_size, size_t actually_read
     }
 }
 
-void *reallocate_array(void **array, size_t capacity, size_t new_bytes)
-{
-    sassert(array != NULL, ERR_PTR_NULL);
-
-    if ((double)SIZE_MAX / (double)capacity <= (double)new_bytes / (double)capacity)
-        push_error(ERR_OVERFLOW, "buffer overflew, maybe you have to many elements in a stack?");
-
-    void *new_array = realloc(*array, new_bytes);
-    sassert(new_array != NULL, ERR_PTR_NULL);
-
-    *array = new_array;
-    return *array;
-}
-
 char *get_buffer_from_file(FILE *fp, size_t file_size)
 {
     sassert(fp, ERR_PTR_NULL);

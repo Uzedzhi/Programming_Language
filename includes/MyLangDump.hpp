@@ -1,7 +1,7 @@
 #ifndef TREEDUMP_H
 #define TREEDUMP_H
 
-#include "MyLang.hpp"
+#include "MyLangVars.hpp"
 #include <stdio.h>
 
 #ifdef DEBUG
@@ -40,8 +40,8 @@
 #define DUMPNODE(node, need_division, ...)
 #endif
 
-LangErr_e create_tree_graph(Node_t *tree);
-LangErr_e print_nodes_to_dump_file(Node_t * node, Node_t * tree, FILE *fp, dirType type_of_direction, int *counter);
+LangErr_t create_tree_graph(Node_t *tree);
+LangErr_t print_nodes_to_dump_file(Node_t * node, Node_t * tree, FILE *fp, int *counter);
 void print_divider(FILE * fp);
 void PrintSiteToes();
 void PrintSiteHeader();

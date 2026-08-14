@@ -1,0 +1,9 @@
+[submodule "MyLibs"]
+	path = MyLibs
+	url = git@github.com:Uzedzhi/MyLibs.git
+[submodule "Dictionary"]
+	path = Dictionary
+	url = git@github.com:Uzedzhi/Dictionary.git
+[submodule "Smart_Stack"]
+	path = Smart_Stack
+	url = git@github.com:Uzedzhi/Smart_Stack.git

@@ -11,11 +11,9 @@
 #endif // level_of_check
 
 typedef const char * const string;
-typedef size_t stack_var_t;
 const size_t CMD_RANGE          = 10;
 const size_t MAX_ARR_SIZE       = 500;
 const size_t MAX_STR_SIZE       = 300;
-const size_t MAX_SIZE           = 200;
 const size_t num_of_regs        = 9;
 const size_t num_of_labels      = 500;
 const double VERSION            = 1.0;
@@ -30,32 +28,6 @@ const size_t X_RES              = 5;
 const size_t Y_RES              = 2;
 const size_t START_VAL          = 15;
 const string VIDEO_HEADER_STR   = "; assembly for video by dimooooon";
-
-enum asmErr_t {
-    ERR_PTR_NULL                = 0,
-    ERR_STACK_NULL              = 1,
-    ERR_CAPACITY_INVALID        = 2,
-    ERR_SIZE_INVALID            = 3,
-    ERR_DIFFERENT_TYPE          = 4,
-    ERR_CANAREIKA_LEFT_CHANGE   = 5,
-    ERR_CANAREIKA_RIGHT_CHANGE  = 6,
-    ERR_OVERFLOW                = 7,
-    ERR_BUFFER_SIZE_INVALID     = 8,
-    ERR_HASH_CHANGED            = 9,
-    ERR_UNDEFINED_CMD           = 10,
-    ERR_FILE_DOES_NOT_EXIST     = 11,
-    ERR_FILE_SIZE_INCORRECT     = 12,
-    ERR_INCORRECT_SIGN          = 13,
-    ERR_INCORRECT_VERSION       = 14,
-    FATAL_ERROR                 = 15,
-    NO_ERROR                    = 16,
-    ERR_INCORRECT_ARGUMENT      = 17,
-    ERR_INCORRECT_LABEL         = 18,
-    ERR_CONFLICTING_TYPES       = 19,
-    ERR_SYSTEM_FAILED           = 20,
-    ERR_VIDEO_DIVIDE_FAIL       = 21,
-    ERR_INCORRECT_VIDEO_HEADER  = 22
-};
 
 #define CALC_INSTRUCTIONS(n) \
     n(PUSH, 0)      \
@@ -141,7 +113,6 @@ struct VID {
     size_t height;
     char audio_file_name[MAX_STR_SIZE];
     size_t fps;
-
 };
 
 struct label {
@@ -189,7 +160,6 @@ bool is_in_array(const char * command, size_t size);
 size_t get_file_size(FILE * fp);
 bool is_same(double a, double b);
 asmArg_t get_type_of_arg(int num_of_command);
-void *reallocate_array(void ** array, size_t capacity, size_t new_bytes);
 
 int max(int a, int b);
 int min(int a, int b);

@@ -2,35 +2,15 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <ctype.h>
 
-#include "my_libs/sassert.hpp"
-#include "MyLangSyntax.hpp"
-#include "MyLang.hpp"
-#include "MyLangDump.hpp"
 
-#define ISVAR   (**NodeArr).type == TYPE_VAR
-#define ISSTR   (**NodeArr).type == TYPE_STR
-#define ISNUM   (**NodeArr).type == TYPE_NUM
-#define ISARTHMOPER (**NodeArr).type == TYPE_OP && (**NodeArr).value.oper >= ARTHM_MUL && (**NodeArr).value.oper <= ARTHM_ARCCTG
-#define ISOPER  (**NodeArr).type == TYPE_OP
-#define SYNTAX_ERROR(NodeArr, ...) {\
-    PRINT_CUR_TYPE_AND_OP((*NodeArr)[-2], "ПредПредыдущая ветка");\
-    PRINT_CUR_TYPE_AND_OP((*NodeArr)[-1], "Предыдущая ветка");\
-    PRINT_CUR_TYPE_AND_OP(**NodeArr,      "Текущая ветка");\
-    PRINT_CUR_TYPE_AND_OP((*NodeArr)[1],  "Будущая ветка");\
-    PRINT_CUR_TYPE_AND_OP((*NodeArr)[2],  "БудБудущая ветка");\
-    fprintf(stderr, RED "-->SYNTAX ERROR: " __VA_ARGS__); fprintf(stderr, "\n" WHITE); exit(ERR_PTR_NULL_LANG);}
+#include "../MyLibs/sassert.hpp"
+#include "../includes/MyLangFront.hpp"
+#include "../includes/MyLangDump.hpp"
+#include "../Smart_Stack/stack.hpp"
+#include "../MyLibs/helper_funcs.hpp"
 
-#define MATCHOPER_ORSYNTAXERR(oper, ...) {\
-    if (!CheckIfOperNextAndInc(NodeArr, oper)) {\
-        SYNTAX_ERROR(NodeArr, __VA_ARGS__);}}
-
-#define IN_PERSONAL_NAMETABLE(lines_of_code) \
-    stackPush(LexArr->ScopeBorders, LexArr->ScopeSize);\
-    lines_of_code\
-    stackPop(LexArr->ScopeBorders, &(LexArr->ScopeSize));
-
+static const int RANGE = 3;
 bool CheckIfOperNextAndInc(Node_t **NodeArr, LangOperType_e oper) {
     bool is_oper = (ISOPER &&  ((**NodeArr).value.oper == (LangOperType_e) oper ||
                                (**NodeArr).value.oper == OPER_NOP));
@@ -50,8 +30,8 @@ void PrintStrArr(char **str, size_t size) {
 }
 
 int GetVarIndexInNameTable(LexArr_t *LexArr, char * var) {
-    sassert(LexArr, ERR_PTR_NULL_LANG);
-    sassert(var,    ERR_PTR_NULL_LANG);
+    sassert(LexArr, ERR_PTR_NULL);
+    sassert(var,    ERR_PTR_NULL);
 
     for (size_t i = 0; i < LexArr->ScopeSize; i++) {
         if (strcmp(var, LexArr->Scope[i]) == 0) {
@@ -106,7 +86,8 @@ Node_t * GetFUNCPARAMS(Node_t **NodeArr, bool AllowingNums, LexArr_t *LexArr) {
 }
 
 Node_t * GetFUNC(Node_t **NodeArr, LexArr_t *LexArr) {
-    MATCHOPER_ORSYNTAXERR(OPER_PAR_OPEN, "У формулы нет имени");
+    MATCHOPER_ORSYNTAXERR(OPER_PAR_OPEN, "У формулы нет номера в начале. Пример: (1) Формула ...");
+    MATCHOPER_ORSYNTAXERR(OPER_PAR_OPEN, "У номера формулы нет закрывающей скобки");
 
     Node_t * func = GetVAR(NodeArr, LexArr, true);
     Node_t * func_body = func->left;
@@ -376,8 +357,8 @@ Node_t * GetG(Node_t **NodeArr, LexArr_t *LexArr) {
 
     Node_t * ProgramTree = GetSECT(NodeArr, LexArr);
 
-    MATCHOPER_ORSYNTAXERR(OPER_PROGRAM_END, "no ending program symbol!");
-    MATCHOPER_ORSYNTAXERR(OPER_AI_REFERENCE, "Not AI reference, Not for generation only");
+    MATCHOPER_ORSYNTAXERR(OPER_PROGRAM_END,   "no ending program symbol!");
+    MATCHOPER_ORSYNTAXERR(OPER_AI_REFERENCE,  "Not AI reference, Not for generation only");
 
     return ProgramTree;
 }
@@ -470,8 +451,7 @@ Node_t * create_node() {
 
 Node_t * NewNode(LangType_e type, LangElem_u value, Node_t *left, Node_t *right) {
     Node_t * node = create_node();
-    sassert(node, ERR_PTR_NULL_LANG);
-
+    sassert(node, ERR_PTR_NULL);
 
     node->type  = type;
     node->value = value;
@@ -488,7 +468,7 @@ LangOperType_e GetArthmOper(Node_t **NodeArr) {
 
 
 Node_t * MakeTreeFromArrayOfLexems(LexArr_t *LexArr) {
-    sassert(LexArr, ERR_PTR_NULL_LANG);
+    sassert(LexArr, ERR_PTR_NULL);
     
     Node_t * NodeArr = LexArr->NodeArr;
     Node_t * Node = GetG(&NodeArr, LexArr);
