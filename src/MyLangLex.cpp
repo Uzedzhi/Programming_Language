@@ -10,7 +10,6 @@
 #include "../MyLibs/helper_funcs.hpp"
 #include "../MyLibs/sassert.hpp"
 #include "../Smart_Stack/stack.hpp"
-#include "../Dictionary/includes/dict.h"
 
 char lang_last_error[ERROR_BUF_MAX_SIZE] = {};
 
@@ -23,11 +22,11 @@ void lex_perror() {
 }
 
 LangErr_t ArrayOfLexemsCtor(LexArr_t * Arr) {
-    Arr->NodeArr = CALLOC_WITH_TYPE(START_INIT_SIZE, Node_t);
-    RETURN_ERR(Arr->NodeArr, ERR_CALLOC_FAIL, "не удалось создать массив звеньев размером %zu", START_INIT_SIZE);
+    Arr->NodeArr = CALLOC_WITH_TYPE(START_INIT_SIZE, Debug_Node_t);
+    RETURN_ERR(Arr->NodeArr,    ERR_CALLOC_FAIL, "не удалось создать массив звеньев размером %zu", START_INIT_SIZE);
 
     Arr->Scope = CALLOC_WITH_TYPE(START_INIT_SIZE, char *);
-    RETURN_ERR(Arr->Scope,   ERR_CALLOC_FAIL, "не удалось создать массив звеньев размером %zu", START_INIT_SIZE);
+    RETURN_ERR(Arr->Scope,      ERR_CALLOC_FAIL, "не удалось создать массив звеньев размером %zu", START_INIT_SIZE);
 
     Arr->ScopeSize          = 0;
     Arr->ScopeCapacity      = START_INIT_SIZE;
@@ -43,7 +42,7 @@ LangErr_t ArrayOfLexemsCtor(LexArr_t * Arr) {
     return OK;
 }
 
-void NodeDtor(Node_t **node) {
+void NodeDtor(Debug_Node_t **node) {
     sassert(node, ERR_PTR_NULL);
 
     if (*node != NULL && (*node)->left != NULL)
@@ -101,9 +100,9 @@ void SSkipLine(const char *str, size_t *Pos) {
     }
 }
 
-int GetVarIndexInArr(char ** Arr, const char * Var, size_t ArrSize) {
+int GetVarIndexInArr(scope_el_t *Arr, const char * Var, size_t ArrSize) {
     for (size_t i = 0; i < ArrSize; i++) {
-        if (strcmp(Arr[i], Var) == 0)
+        if (strcmp(Arr[i].VarName, Var) == 0)
             return i;
     }
     return -1;
@@ -172,22 +171,23 @@ void UTF8_tolower(const char *buf)
     }
 }
 
-LangErr_t  FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
+LangErr_t FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
     sassert(LexArr,     ERR_PTR_NULL);
     sassert(file_name,  ERR_PTR_NULL);
 
-    FILE * fp = fopen(file_name, "r");
+    FILE *fp = fopen(file_name, "r");
     RETURN_ERR(fp, ERR_FILE_DOES_NOT_EXIST, "Не удалось открыть файл <%s>", file_name);
 
     size_t FileSize  = GetFileSize(fp);
     RETURN_ERR(FileSize != -1, ERR_FILE_SIZE_INCORRECT, "Не удалось считать размер файла <%s>: может быть он удалился во время чтения?", file_name);
 
-    const char *FileBuf = GetBufferFromFile(fp, FileSize);
-    RETURN_ERR(FileBuf, ERR_PTR_NULL, "Не удалось прочитать содержимое файла <%s>: может он слишком большой?", file_name);
-
+    LexArr->FileBuf = GetBufferFromFile(fp, FileSize);
+    RETURN_ERR(LexArr->FileBuf, ERR_PTR_NULL, "Не удалось прочитать содержимое файла <%s>: может он слишком большой?", file_name);
     fclose(fp);
 
-    size_t Pos = 0;
+    const char *FileBuf = LexArr->FileBuf;
+    size_t Pos  = 0;
+    int    line = 0;
     UTF8_tolower(FileBuf);
 
     size_t NextIndex = 0;
@@ -198,8 +198,11 @@ LangErr_t  FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
         }
 
         // SKIP SPACE
-        while (isspace(FileBuf[Pos]))
+        while (isspace(FileBuf[Pos])) {
             Pos++;
+            if (FileBuf[Pos] == '\n')
+                line++;
+        }
 
         // COMMENT
         if (FileBuf[Pos] == '|') {
@@ -212,7 +215,7 @@ LangErr_t  FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
         int value = strtol(FileBuf + Pos, &CurPos, 10);
         if (CurPos != FileBuf + Pos) {
             Pos = CurPos - FileBuf;
-            LexArr->NodeArr[(LexArr->NodeArrSize)++] = {TYPE_NUM, {.num = value}, NULL, NULL};
+            LexArr->NodeArr[(LexArr->NodeArrSize)++] = {TYPE_NUM, {.num = value}, NULL, NULL, Pos, line};
             continue;
         }
 
@@ -221,7 +224,7 @@ LangErr_t  FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
         LangOperType_e OperType = CheckOperType(FileBuf + Pos, &str_len);
         if (OperType != OPER_NOP) {
             Pos += str_len;
-            LexArr->NodeArr[(LexArr->NodeArrSize)++] = {TYPE_OP, {.oper = OperType}, NULL, NULL};
+            LexArr->NodeArr[(LexArr->NodeArrSize)++] = {TYPE_OP, {.oper = OperType}, NULL, NULL, Pos, line};
             continue;
         }
 
@@ -259,18 +262,16 @@ LangErr_t  FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
                 free(Id);
             }
 
-            LexArr->NodeArr[(LexArr->NodeArrSize)++] = {TYPE_VAR, {.var_name = LexArr->Scope[VarInd]}, NULL, NULL};
+            LexArr->NodeArr[(LexArr->NodeArrSize)++] = {TYPE_VAR, {.str = LexArr->Scope[VarInd]}, NULL, NULL, Pos, line};
             continue;
         }
 
         int len = strcspn(FileBuf, "\n\0");
         fprintf(stderr, RED "Синтаксическая ошибка: " RESET "не смог определить ключевое слово на строке: \n %.*s \n", len, FileBuf + Pos);
         
-        free((char *) FileBuf);
         return ERR_INCORRECT_LABEL;
     }
 
-    free((char *) FileBuf);
     return OK;
 }
 
@@ -279,7 +280,7 @@ static void PrintTabulations(FILE *fp, size_t n) {
         fprintf(fp, "\t");
 }
 
-LangErr_t PrintNodeSexprToFile(FILE *fp, LexArr_t *LexArr, Node_t *Node) {
+LangErr_t PrintNodeSexprToFile(FILE *fp, Node_t *Node) {
     static int Tabulation = 0;
 
     PrintTabulations(fp, Tabulation);
@@ -291,7 +292,7 @@ LangErr_t PrintNodeSexprToFile(FILE *fp, LexArr_t *LexArr, Node_t *Node) {
     switch(Node->type) {
         case TYPE_VAR:
         case TYPE_STR:   
-            fprintf(fp, "\"%s\"\n", Node->value.var_name);
+            fprintf(fp, "\"%s\"\n", Node->value.str);
             break;
         case TYPE_NUM:   fprintf(fp, "\"%d\"\n",  Node->value.num);             break;
         case TYPE_OP:    fprintf(fp, "%s\n",   AllOper[Node->value.oper].Tree); break;
@@ -300,9 +301,9 @@ LangErr_t PrintNodeSexprToFile(FILE *fp, LexArr_t *LexArr, Node_t *Node) {
         }
 
     if (Node->left != NULL)
-        PrintNodeSexprToFile(fp, LexArr, Node->left);
+        PrintNodeSexprToFile(fp, Node->left);
     if (Node->right != NULL)
-        PrintNodeSexprToFile(fp, LexArr, Node->right);
+        PrintNodeSexprToFile(fp, Node->right);
     
     Tabulation--;
     PrintTabulations(fp, Tabulation);
@@ -311,13 +312,13 @@ LangErr_t PrintNodeSexprToFile(FILE *fp, LexArr_t *LexArr, Node_t *Node) {
     return OK;
 }
 
-LangErr_t PrintProgramToFile(const char *FileName, LexArr_t *LexArr) {
+LangErr_t PrintProgramToFile(const char *FileName, Node_t *NodeTree) {
     sassert(FileName, ERR_PTR_NULL);
 
     FILE *fp = fopen(FileName, "w");
     RETURN_ERR(fp, ERR_FILE_DOES_NOT_EXIST, "не удалось открыть файл <%s>", FileName);
 
-    LangErr_t result = PrintNodeSexprToFile(fp, LexArr, LexArr->NodeArr);
+    LangErr_t result = PrintNodeSexprToFile(fp, NodeTree);
     if (result != OK)
         return result;
     fclose(fp);
@@ -332,44 +333,37 @@ void print_help(char *argv[]) {
 int main(int argc, char * argv[]) {
     if (argc != 3) {
         print_help(argv);
-        return 0;
+        return OK;
     }
-    int result = 0;
-
-    
 
     LexArr_t LexArr = {};
-    result = ArrayOfLexemsCtor(&LexArr);
-    if (result != OK) {
+    if (ArrayOfLexemsCtor(&LexArr) != OK) {
         lex_perror();
-        return result;
+        return NOK;
     }
 
-    char *input_file_name = argv[1];
-    result = FillArrayOfLexems(&LexArr, input_file_name);
-    if (result != OK) {
+    if (FillArrayOfLexems(&LexArr, argv[1]) != OK) {
         lex_perror();
-        return result;
+        return NOK;
     }
     
     // for (size_t i = 0; i < LexArr->NodeArrSize; i++) {
     //     fprintf(stderr, "type: %s ", AllValueTypesTxt[LexArr->NodeArr[i].type]);\
     //     switch(LexArr->NodeArr[i].type) {\
     //         case TYPE_NUM:   fprintf(stderr, "num: %d\n",  LexArr->NodeArr[i].value.num);                                  break;\
-    //         case TYPE_VAR:   fprintf(stderr, "var: %s\n",  LexArr->NodeArr[i].value.var_name);                             break;\
+    //         case TYPE_VAR:   fprintf(stderr, "var: %s\n",  LexArr->NodeArr[i].value.str);                             break;\
     //         case TYPE_OP:    fprintf(stderr, "op: %s\n",   AllOperDumpStr[LexArr->NodeArr[i].value.oper]);                 break;\
     //     }
     // }
 
-    Node_t *node = MakeTreeFromArrayOfLexems(&LexArr);
-    if (!node) {
+    Node_t *NodeTree = MakeTreeFromArrayOfLexems(&LexArr);
+    if (!NodeTree) {
         lex_perror();
         return NOK;
     }
-    free(LexArr.NodeArr);
-    LexArr.NodeArr = node;
+    PrintProgramToFile(argv[2], NodeTree);
 
-    PrintProgramToFile(argv[2], &LexArr);
     ArrayOfLexemsDtor(&LexArr);
-    return 0;
+    free(NodeTree);
+    return OK;
 }

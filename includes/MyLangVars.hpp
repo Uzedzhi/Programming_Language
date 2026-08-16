@@ -191,22 +191,35 @@ enum LangType_e {
     TYPE_STR        =   3
 };
 
+enum LangVarType_e {
+    VAR_NAME    = 0,
+    FUNC_NAME   = 1,
+    STEP_NAME   = 2,
+    NOTE_NAME   = 3, 
+};
+
 union LangElem_u {
     LangOperType_e oper;
-    char *var_name;
+    char *str;
     int num;
 };
+
+typedef struct Debug_Node_t {
+    LangType_e type;
+    LangElem_u value;
+    Debug_Node_t *left;
+    Debug_Node_t *right;
+
+    size_t pos;
+    int line;
+} Debug_Node_t;
 
 typedef struct Node_t {
     LangType_e type;
     LangElem_u value;
     Node_t *left;
     Node_t *right;
-
-    const char *pos;
-    int line;
 } Node_t;
-
 
 #define ERROR_BUF_MAX_SIZE 256
 #ifndef NDEBUG

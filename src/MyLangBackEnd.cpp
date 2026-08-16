@@ -23,7 +23,7 @@
     }\
     fprintf(stderr, RED "-->SYNTAX ERROR: " __VA_ARGS__); fprintf(stderr, "\n" WHITE); sassert(0, ERR_PTR_NULL_LANG);}
 
-#define MATCHOPER_ORSYNTAXERR(type, oper, ...) {\
+#define MATCH_ORSYNTAXERR(type, oper, ...) {\
     if (!CheckIfOperNextAndInc(NodeArr, oper, type)) {\
         SYNTAX_ERROR(NodeArr, __VA_ARGS__);}}
 
