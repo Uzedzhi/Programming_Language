@@ -197,6 +197,11 @@ LangErr_t FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
             reallocate_array((void**) &(LexArr->NodeArr), LexArr->NodeArrCapacity, LexArr->NodeArrCapacity * sizeof(Node_t));
         }
 
+        if (LexArr->ScopeSize >= LexArr->ScopeCapacity - 1) {
+            LexArr->ScopeCapacity *= 2;
+            reallocate_array((void**) &(LexArr->Scope), LexArr->ScopeCapacity, LexArr->ScopeCapacity * sizeof(Node_t));
+        }
+
         // SKIP SPACE
         while (isspace(FileBuf[Pos])) {
             Pos++;
@@ -224,16 +229,21 @@ LangErr_t FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
         LangOperType_e OperType = CheckOperType(FileBuf + Pos, &str_len);
         if (OperType != OPER_NOP) {
             Pos += str_len;
+
+            if (OperType == OPER_AI_REFERENCE)
+                LexArr->Excepts_ptr = LexArr->NodeArrSize;
+
             LexArr->NodeArr[(LexArr->NodeArrSize)++] = {TYPE_OP, {.oper = OperType}, NULL, NULL, Pos, line};
             continue;
         }
 
         // VAR
-        if (isalnum(FileBuf[Pos]) || IsRussianNext(FileBuf + Pos)) {
+        if ((FileBuf[Pos]) || IsRussianNext(FileBuf + Pos)) {
             const char * s2 = FileBuf + Pos;
             size_t len = 0;
 
             int IsRussian = false;
+
             while (isalnum(FileBuf[Pos]) || (IsRussian = IsRussianNext(FileBuf + Pos))) {
                 if (IsRussian)
                     Pos += 2; // russian character is 2 bytes
@@ -255,12 +265,13 @@ LangErr_t FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
                 if (len > 1)
                     fprintf(stderr, CYAN "WARNING: " WHITE "your variable <%s>\n"
                                          "\t is more than 1 character long, it is inappropiate in math\n", Id);
-
+                
                 LexArr->Scope[LexArr->ScopeSize] = Id;
                 VarInd = LexArr->ScopeSize++;
             } else {
                 free(Id);
             }
+
 
             LexArr->NodeArr[(LexArr->NodeArrSize)++] = {TYPE_VAR, {.str = LexArr->Scope[VarInd]}, NULL, NULL, Pos, line};
             continue;
@@ -271,6 +282,8 @@ LangErr_t FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
         
         return ERR_INCORRECT_LABEL;
     }
+
+    LexArr->NodeArr[(LexArr->NodeArrSize)++] = {TYPE_OP, {.oper = OPER_NULL}, NULL, NULL};
 
     return OK;
 }

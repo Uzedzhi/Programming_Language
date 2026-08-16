@@ -183,7 +183,7 @@ Node_t * GetFUNC(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
         MATCH_ORSYNTAXERR(OPER_PAR_CLOSE,   "У функции <%s> нет закрывающей скобки у параметров", func->value.str);
         MATCH_ORSYNTAXERR(OPER_COLON,       "в функции нет разделителя :");
 
-        func_body->right = GetOPS(NodeArr, OPER_NOP, LexArr);
+        func_body->right = GetOPS(NodeArr, false, LexArr);
 
         MATCH_ORSYNTAXERR(OPER_RETURN, "нету возвращаемого значения!");
         func->right = GetE(NodeArr, LexArr);
@@ -209,7 +209,7 @@ Node_t * GetFUNCS(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
     return AllFuncs;
 }
 
-Node_t * GetOPS(Debug_Node_t **NodeArr, LangOperType_e sep, LexArr_t *LexArr) {
+Node_t * GetOPS(Debug_Node_t **NodeArr, bool in_scope, LexArr_t *LexArr) {
     Node_t *Opers   = NewNode(TYPE_OP, (LangElem_u){.oper = OPER_NEW_OP}, NULL, NULL);
     Node_t *CurNode = Opers;
     size_t iter     = 0;
@@ -217,24 +217,33 @@ Node_t * GetOPS(Debug_Node_t **NodeArr, LangOperType_e sep, LexArr_t *LexArr) {
     while (!CheckIfOperNext(NodeArr, OPER_PROGRAM_END)      &&
            !CheckIfOperNext(NodeArr, OPER_FUNC_DECL_NAME)   &&
            !CheckIfOperNext(NodeArr, OPER_RETURN)           &&
-           !CheckIfOperNext(NodeArr, OPER_ELSE)           &&
-           !CheckIfOperNext(NodeArr, OPER_WHILE)           &&
-           !CheckIfOperNext(NodeArr, OPER_PATH_OF_SOLVING)) {
+           !CheckIfOperNext(NodeArr, OPER_ELSE)             &&
+           !CheckIfOperNext(NodeArr, OPER_WHILE)            &&
+           !CheckIfOperNext(NodeArr, OPER_PATH_OF_SOLVING)  &&
+           !CheckIfOperNext(NodeArr, OPER_STEP)             &&
+           !CheckIfOperNext(NodeArr, OPER_EXCEPT)           &&
+           !CheckIfOperNext(NodeArr, OPER_NOTE)             &&
+           !CheckIfOperNext(NodeArr, OPER_NULL)) {
         if (iter++ != 0) {
             CurNode->right = NewNode(TYPE_OP, {.oper = OPER_NEW_OP}, NULL, NULL);
             CurNode = CurNode->right;
         }
 
+        if (CheckIfOperNextAndInc(NodeArr, OPER_SCOPE_CLOSE)) {
+            CHECK_ORSYNTAXERROR(in_scope, "похоже вы открыли где то скобку и не закрыли ее");
+            break;
+        } else if (CheckIfOperNextAndInc(NodeArr, OPER_SCOPE_OPEN)) {
+            IN_PERSONAL_NAMETABLE(
+                CurNode->left = GetOPS(NodeArr, 1, LexArr);
+            )
+        }
+        
         Node_t *op = GetOP(NodeArr, LexArr);
         DUMP_LANGNODE(&op, "состояние дерева после обработки одного оператора в функции GetOPS");
 
         if (!op)
             break;
         CurNode->left = op;
-
-        if (!CheckIfOperNextAndInc(NodeArr, sep) && sep != OPER_NOP) {
-            break;
-        }
     }
 
     return Opers;
@@ -282,13 +291,19 @@ Node_t * GetIF(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
     IN_PERSONAL_NAMETABLE(
         IfStatement->right = NewNode(TYPE_OP, {.oper = OPER_IF_BODY}, NULL, NULL);
         Node_t *IfBody = IfStatement->right;
-        IfBody->left  = GetOPS(NodeArr, OPER_NOP, LexArr);
-        DUMP_LANGNODE(NodeArr, "if оператор");
+
+        if (CheckIfOperNextAndInc(NodeArr, OPER_SCOPE_OPEN))
+            IfBody->left  = GetOPS(NodeArr, 1, LexArr);
+        else
+            IfBody->left  = GetOP(NodeArr, LexArr);
     )
 
     IN_PERSONAL_NAMETABLE(
         if (CheckIfOperNextAndInc(NodeArr, OPER_ELSE)) {
-            IfBody->right = GetOPS(NodeArr, OPER_NOP, LexArr);
+            if (CheckIfOperNextAndInc(NodeArr, OPER_SCOPE_OPEN))
+                IfBody->right = GetOPS(NodeArr, 1, LexArr);
+            else
+                IfBody->right = GetOP(NodeArr, LexArr);
         }
     )
     return IfStatement;
@@ -340,7 +355,10 @@ Node_t * GetWHILE(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
 
     MATCH_ORSYNTAXERR(OPER_WHILE_BODY, "отсутствует запись WHILE");
     IN_PERSONAL_NAMETABLE(
-        WhileNode->right = GetOPS(NodeArr, OPER_NOP, LexArr);
+        if (CheckIfOperNextAndInc(NodeArr, OPER_SCOPE_OPEN))
+            WhileNode->right = GetOPS(NodeArr, 1, LexArr);
+        else
+            WhileNode->right = GetOP(NodeArr, LexArr);
     )
     return WhileNode;
 }
@@ -412,11 +430,70 @@ Node_t * GetOP(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
         return value;
     }
 
-
     return GetE(NodeArr, LexArr);
 
 }
 
+Node_t * GetNOTES(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
+    Debug_Node_t **OldNodeArr  = NodeArr;
+    *NodeArr = (LexArr->NodeArr + LexArr->Excepts_ptr + 1);
+
+    while (CheckIfOperNextAndInc(NodeArr, OPER_NOTE)) {
+        if (LexArr->NotesSize >= LexArr->NotesCapacity) {
+            LexArr->NotesCapacity *= 2;
+            reallocate_array((void **) &LexArr->Notes, LexArr->NotesCapacity, LexArr->NotesCapacity * sizeof(Node_t));
+        }
+        CHECK_ORSYNTAXERROR(ISNUM, "после примечания обяз должен быть номер примечания ты ПОНЕЛ?!?!");
+
+        Node_t *num = GetNUM(NodeArr, LexArr);
+        MATCH_ORSYNTAXERR(OPER_COLON, "ну вот пишут примечание <число>:, так сложно написать : чтоли?");
+
+        num->left = GetOPS(NodeArr, false, LexArr);
+        LexArr->Notes[LexArr->NotesSize++] = *num;
+    }
+}
+
+Node_t * GetNOTE(Debug_Node_t **NodeArr, LexArr_t *LexArr, int NoteNum) {
+    for (int i = 0; i < LexArr->NotesSize; i++) {
+        if (NoteNum == LexArr->Notes[i].value.num)
+            return LexArr->Notes[i]->left;
+    }
+
+    return NULL;
+}
+
+Node_t * GetSTEPS(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
+    if (CheckIfOperNext(NodeArr, OPER_PROGRAM_END))
+        return NULL;
+
+    Node_t *cur_step  = NULL;
+    Node_t *next_step = NULL;
+    Node_t *steps     = next_step;
+    while (!CheckIfOperNext(NodeArr, OPER_PROGRAM_END) &&
+            CheckIfOperNextAndInc(NodeArr, OPER_STEP)) {
+        
+        next_step = NewNode(TYPE_OP, {.oper = OPER_NEW_STEP}, NULL, NULL);
+        cur_step  = next_step->left;
+
+        CHECK_ORSYNTAXERROR(ISNUM, "после слов \"%s\" должен стоять номер, помоему это логично", AllOper[OPER_STEP].Text[0]);
+        cur_step = GetNUM(NodeArr, LexArr);
+        MATCH_ORSYNTAXERR(OPER_COLON, "а после номера у шага должна стоять :, так большой папа сказал");
+
+        Node_t *cur_step_body = GetOPS(NodeArr, false, LexArr);
+        cur_step->left  = cur_step_body;
+
+        if (CheckIfOperNextAndInc(NodeArr, OPER_EXCEPT)) {
+            CHECK_ORSYNTAXERROR(ISNUM, "после ссылки на примечание должен быть номер примечания балбес");
+
+            Node_t *num = GetNUM(NodeArr, LexArr);
+            cur_step->right = GetNOTE(NodeArr, LexArr, num->value.num);
+        }
+
+        next_step = next_step->right;
+    }
+
+    return steps;
+}
 Node_t * GetSECT(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
     Node_t * value = NewNode(TYPE_OP, {.oper = OPER_PROGRAM_START}, NULL, NULL);
 
@@ -428,7 +505,10 @@ Node_t * GetSECT(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
     DUMP_LANGNODE(&value, "состояние дерева после парсинга всех функций");
     MATCH_ORSYNTAXERR(OPER_PATH_OF_SOLVING, "без хода решений компилируешь негодяй");
 
-    value->right = GetOPS(NodeArr, OPER_NOP, LexArr);
+    GetNOTES(NodeArr, LexArr);
+    value->right = GetSTEPS(NodeArr, LexArr);
+    MATCH_ORSYNTAXERR(OPER_STEP, "все решение должно делиться на шаги. После хода решений не обнаружен первый шаг.")
+    value->right = GetOPS(NodeArr, false, LexArr);
     DUMP_LANGNODE(&value, "финальное состояние дерева после всех операций");
     return value;
 }

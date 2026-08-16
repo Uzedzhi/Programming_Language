@@ -91,7 +91,8 @@ const size_t POISON             = 0xDEDDEAF;
     n(OPER_QUOTE,            ""                 ,   "\"")                                                                        \
     n(OPER_NEW_NAME,         "NEW_NAME"         ,   "")                                                                          \
     n(OPER_NEW_FUNC,         "NEW_FUNC"         ,   "")                                                                          \
-    n(OPER_NEW_INIT,         "NEW_FUNC"         ,   "")                                                                          \
+    n(OPER_NEW_INIT,         "NEW_INIT"         ,   "")                                                                          \
+    n(OPER_NEW_STEP,         "NEW_STEP"         ,   "")                                                                          \
     n(OPER_NEW_OP,           "NEW_OP"           ,   "")                                                                          \
     n(OPER_NEW_PARAM,        "NEW_PARAM"        ,   "")                                                                          \
     n(OPER_IF_BODY,          "IF_BODY"          ,   "")                                                                          \
@@ -103,7 +104,13 @@ const size_t POISON             = 0xDEDDEAF;
     n(OPER_USING_FORMULAS,   "ALL_FUNCS"        ,   "используемые формулы:")                                                     \
     n(OPER_AI_REFERENCE,     "ENDING_STR"       ,   "AI reference, for generation only")                                         \
     n(OPER_PATH_OF_SOLVING,  "ALL_OPERS"        ,   "ход решения:")                                                              \
-    n(OPER_STEP,             "STEP"             ,   "шаг №")                                                                     \
+    n(OPER_STEP,             "TRY"              ,   "шаг №")                                                                     \
+    n(OPER_NOTE,             "NOTE"             ,   "примечание")                                                                     \
+    n(OPER_NULL,             "NULL"             ,   "")                                                                     \
+    n(OPER_DASH,             "DASH"             ,   "-")                                                                     \
+    n(OPER_EXCEPT,           "EXCEPT"           ,   "Если этот шаг не получился, то см. примечание")                                                                     \
+    n(OPER_SCOPE_CLOSE,      "SCOPE_CLOSE"      ,   "}")\
+    n(OPER_SCOPE_OPEN,       "SCOPE_OPEN"       ,   "{")\
     n(OPER_ARTHM_MUL,        "*"                ,   "*"     )                                                                    \
     n(OPER_ARTHM_ADD,        "+"                ,   "+"     )                                                                    \
     n(OPER_ARTHM_SUB,        "-"                ,   "-"     )                                                                    \
@@ -188,7 +195,8 @@ enum LangType_e {
     TYPE_OP         =   0,
     TYPE_VAR        =   1,
     TYPE_NUM        =   2,
-    TYPE_STR        =   3
+    TYPE_STR        =   3,
+    
 };
 
 enum LangVarType_e {

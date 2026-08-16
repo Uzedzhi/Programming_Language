@@ -45,7 +45,12 @@ typedef struct LexArr_t {
     size_t ScopeCapacity;
     stack_t *ScopeBorders;
 
+    Node_t *Notes;
+    size_t NotesSize;
+    size_t NotesCapacity;
+
     const char *FileBuf;
+    size_t Excepts_ptr;
 } LexArr_t;
 
 LangErr_t ArrayOfLexemsCtor(LexArr_t * Arr);
@@ -60,7 +65,7 @@ Node_t * GetG(Debug_Node_t **NodeArr, LexArr_t *LexArr);
 Node_t * GetSECT(Debug_Node_t **NodeArr, LexArr_t *LexArr);
 Node_t * GetFUNCS(Debug_Node_t **NodeArr, LexArr_t *LexArr);
 Node_t * GetFUNC(Debug_Node_t **NodeArr, LexArr_t *LexArr);
-Node_t * GetOPS(Debug_Node_t **NodeArr, LangOperType_e sep, LexArr_t *LexArr);
+Node_t * GetOPS(Debug_Node_t **NodeArr, bool sep, LexArr_t *LexArr);
 Node_t * GetOP(Debug_Node_t **NodeArr, LexArr_t *LexArr);
 Node_t * GetIF(Debug_Node_t **NodeArr, LexArr_t *LexArr);
 Node_t * GetCMP(Debug_Node_t **NodeArr, LexArr_t *LexArr);
