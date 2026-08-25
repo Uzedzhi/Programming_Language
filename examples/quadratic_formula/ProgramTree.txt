@@ -1,168 +1,143 @@
-10
 (
 	PROGRAM_START
 	(
-		FUNC
+		NEW_FUNC
 		(
-			"Root1" 0 0
+			'первогокорняквадратногоуравнения'
 			(
 				FUNC_BODY
 				(
 					NEW_PARAM
 					(
-						"D" 1 1
+						'D'
 					)
 					(
 						NEW_PARAM
 						(
-							"a" 2 1
+							'a'
 						)
 						(
 							NEW_PARAM
 							(
-								"b" 3 1
+								'b'
 							)
 						)
 					)
 				)
 				(
 					NEW_OP
-					(
-						NEW_INIT
-						(
-							VAR_DECLARATION
-							(
-								"x" 4 1
-							)
-							(
-								/
-								(
-									+
-									(
-										*
-										(
-											"-1"
-										)
-										(
-											"b" 3 1
-										)
-									)
-									(
-										sqrt
-										(
-											"D" 1 1
-										)
-									)
-								)
-								(
-									*
-									(
-										"2"
-									)
-									(
-										"a" 2 1
-									)
-								)
-							)
-						)
-					)
 				)
 			)
 			(
-				"x" 4 1
+				/
+				(
+					+
+					(
+						*
+						(
+							-1
+						)
+						(
+							'b'
+						)
+					)
+					(
+						sqrt
+						(
+							'D'
+						)
+					)
+				)
+				(
+					*
+					(
+						2
+					)
+					(
+						'a'
+					)
+				)
 			)
 		)
 		(
-			FUNC
+			NEW_FUNC
 			(
-				"Root2" 5 0
+				'второгокорняквадратногоуравнения'
 				(
 					FUNC_BODY
 					(
 						NEW_PARAM
 						(
-							"D" 1 1
+							'D'
 						)
 						(
 							NEW_PARAM
 							(
-								"a" 2 1
+								'a'
 							)
 							(
 								NEW_PARAM
 								(
-									"b" 3 1
+									'b'
 								)
 							)
 						)
 					)
 					(
 						NEW_OP
-						(
-							NEW_INIT
-							(
-								VAR_DECLARATION
-								(
-									"x" 4 1
-								)
-								(
-									/
-									(
-										-
-										(
-											*
-											(
-												"-1"
-											)
-											(
-												"b" 3 1
-											)
-										)
-										(
-											sqrt
-											(
-												"D" 1 1
-											)
-										)
-									)
-									(
-										*
-										(
-											"2"
-										)
-										(
-											"a" 2 1
-										)
-									)
-								)
-							)
-						)
 					)
 				)
 				(
-					"x" 4 1
+					/
+					(
+						-
+						(
+							*
+							(
+								-1
+							)
+							(
+								'b'
+							)
+						)
+						(
+							sqrt
+							(
+								'D'
+							)
+						)
+					)
+					(
+						*
+						(
+							2
+						)
+						(
+							'a'
+						)
+					)
 				)
 			)
 			(
-				FUNC
+				NEW_FUNC
 				(
-					"Det" 6 0
+					'детерминанта'
 					(
 						FUNC_BODY
 						(
 							NEW_PARAM
 							(
-								"a" 2 1
+								'a'
 							)
 							(
 								NEW_PARAM
 								(
-									"b" 3 1
+									'b'
 								)
 								(
 									NEW_PARAM
 									(
-										"c" 7 1
+										'c'
 									)
 								)
 							)
@@ -174,143 +149,176 @@
 								(
 									VAR_DECLARATION
 									(
-										"D" 1 1
+										'b2'
 									)
 									(
-										-
+										*
 										(
-											*
-											(
-												"b" 3 1
-											)
-											(
-												"b" 3 1
-											)
+											'b'
 										)
 										(
-											*
-											(
-												*
-												(
-													"4"
-												)
-												(
-													"a" 2 1
-												)
-											)
-											(
-												"c" 7 1
-											)
+											'b'
 										)
 									)
 								)
 							)
+							(
+								NEW_OP
+							)
 						)
 					)
 					(
-						"D" 1 1
+						-
+						(
+							'b2'
+						)
+						(
+							*
+							(
+								*
+								(
+									4
+								)
+								(
+									'a'
+								)
+							)
+							(
+								'c'
+							)
+						)
 					)
 				)
 			)
 		)
 	)
 	(
-		NEW_OP
+		NEW_STEP
 		(
-			IN
-			(
-				"a" 2 0
-			)
-		)
-		(
-			NEW_OP
-			(
-				IN
-				(
-					"b" 3 0
-				)
-			)
+			1
 			(
 				NEW_OP
 				(
 					IN
 					(
-						"c" 7 0
+						'a'
 					)
 				)
 				(
 					NEW_OP
 					(
-						IF
+						IN
 						(
-							NEW_CMP
+							'b'
+						)
+					)
+					(
+						NEW_OP
+						(
+							IN
 							(
-								==
-								(
-									"a" 2 0
-								)
-								(
-									"0"
-								)
+								'c'
 							)
 						)
 						(
-							IF_ELSE
+							NEW_OP
+						)
+					)
+				)
+			)
+			(
+				NEW_OP
+				(
+					NEW_INIT
+					(
+						VAR_DECLARATION
+						(
+							'xxx'
+						)
+						(
+							1
+						)
+					)
+				)
+				(
+					NEW_OP
+					(
+						OUT
+						(
+							1
+						)
+					)
+					(
+						NEW_OP
+					)
+				)
+			)
+		)
+		(
+			NEW_STEP
+			(
+				2
+				(
+					NEW_OP
+					(
+						IF
+						(
+							EQ
 							(
-								NEW_OP
+								'a'
+							)
+							(
+								0
+							)
+						)
+						(
+							IF_BODY
+							(
+								IF
 								(
-									IF
+									EQ
 									(
-										NEW_CMP
+										'b'
+									)
+									(
+										0
+									)
+								)
+								(
+									IF_BODY
+									(
+										IF
 										(
-											==
+											EQ
 											(
-												"b" 3 0
+												'c'
 											)
 											(
-												"0"
+												0
+											)
+										)
+										(
+											IF_BODY
+											(
+												OUT
+												(
+													-1
+												)
+											)
+											(
+												OUT
+												(
+													0
+												)
 											)
 										)
 									)
 									(
-										IF_ELSE
+										NEW_OP
 										(
-											NEW_OP
+											OUT
 											(
-												IF
-												(
-													NEW_CMP
-													(
-														==
-														(
-															"c" 7 0
-														)
-														(
-															"0"
-														)
-													)
-												)
-												(
-													IF_ELSE
-													(
-														NEW_OP
-														(
-															OUT
-															(
-																"-1"
-															)
-														)
-													)
-													(
-														NEW_OP
-														(
-															OUT
-															(
-																"0"
-															)
-														)
-													)
-												)
+												1
 											)
 										)
 										(
@@ -318,29 +326,23 @@
 											(
 												OUT
 												(
-													"1"
+													/
+													(
+														*
+														(
+															-1
+														)
+														(
+															'c'
+														)
+													)
+													(
+														'b'
+													)
 												)
 											)
 											(
 												NEW_OP
-												(
-													OUT
-													(
-														/
-														(
-															*
-															(
-																"-1"
-															)
-															(
-																"c" 7 0
-															)
-														)
-														(
-															"b" 3 0
-														)
-													)
-												)
 											)
 										)
 									)
@@ -351,28 +353,28 @@
 								(
 									FUNC_CALL
 									(
-										"D" 1 1
+										FUNC_VARS
+										(
+											'детерминанта'
+										)
+										(
+											'D'
+										)
 									)
 									(
-										FUNC
+										NEW_PARAM
 										(
-											"Det" 6 0
+											'a'
 										)
 										(
 											NEW_PARAM
 											(
-												"a" 2 0
+												'b'
 											)
 											(
 												NEW_PARAM
 												(
-													"b" 3 0
-												)
-												(
-													NEW_PARAM
-													(
-														"c" 7 0
-													)
+													'c'
 												)
 											)
 										)
@@ -383,28 +385,28 @@
 									(
 										FUNC_CALL
 										(
-											"x1" 8 1
+											FUNC_VARS
+											(
+												'первогокорняквадратногоуравнения'
+											)
+											(
+												'x1'
+											)
 										)
 										(
-											FUNC
+											NEW_PARAM
 											(
-												"Root1" 0 0
+												'D'
 											)
 											(
 												NEW_PARAM
 												(
-													"D" 1 1
+													'a'
 												)
 												(
 													NEW_PARAM
 													(
-														"a" 2 0
-													)
-													(
-														NEW_PARAM
-														(
-															"b" 3 0
-														)
+														'b'
 													)
 												)
 											)
@@ -415,28 +417,28 @@
 										(
 											FUNC_CALL
 											(
-												"x2" 9 1
+												FUNC_VARS
+												(
+													'второгокорняквадратногоуравнения'
+												)
+												(
+													'x2'
+												)
 											)
 											(
-												FUNC
+												NEW_PARAM
 												(
-													"Root2" 5 0
+													'D'
 												)
 												(
 													NEW_PARAM
 													(
-														"D" 1 1
+														'a'
 													)
 													(
 														NEW_PARAM
 														(
-															"a" 2 0
-														)
-														(
-															NEW_PARAM
-															(
-																"b" 3 0
-															)
+															'b'
 														)
 													)
 												)
@@ -447,25 +449,22 @@
 											(
 												IF
 												(
-													NEW_CMP
+													EQ
 													(
-														==
-														(
-															"D" 1 1
-														)
-														(
-															"0"
-														)
+														'D'
+													)
+													(
+														0
 													)
 												)
 												(
-													IF_ELSE
+													IF_BODY
 													(
 														NEW_OP
 														(
 															OUT
 															(
-																"1"
+																1
 															)
 														)
 														(
@@ -473,35 +472,41 @@
 															(
 																OUT
 																(
-																	"x1" 8 1
+																	'x1'
 																)
+															)
+															(
+																NEW_OP
 															)
 														)
 													)
 													(
-														NEW_OP
+														IF
 														(
-															IF
+															MORE
 															(
-																NEW_CMP
-																(
-																	>
-																	(
-																		"D" 1 1
-																	)
-																	(
-																		"0"
-																	)
-																)
+																'D'
 															)
 															(
-																IF_ELSE
+																0
+															)
+														)
+														(
+															IF_BODY
+															(
+																NEW_OP
+																(
+																	OUT
+																	(
+																		2
+																	)
+																)
 																(
 																	NEW_OP
 																	(
 																		OUT
 																		(
-																			"2"
+																			'x1'
 																		)
 																	)
 																	(
@@ -509,47 +514,32 @@
 																		(
 																			OUT
 																			(
-																				"x1" 8 1
+																				'x2'
 																			)
 																		)
 																		(
 																			NEW_OP
-																			(
-																				OUT
-																				(
-																					"x2" 9 1
-																				)
-																			)
 																		)
 																	)
 																)
+															)
+															(
+																IF
 																(
-																	NEW_OP
+																	LESS
 																	(
-																		IF
+																		'D'
+																	)
+																	(
+																		0
+																	)
+																)
+																(
+																	IF_BODY
+																	(
+																		OUT
 																		(
-																			NEW_CMP
-																			(
-																				<
-																				(
-																					"D" 1 1
-																				)
-																				(
-																					"0"
-																				)
-																			)
-																		)
-																		(
-																			IF_ELSE
-																			(
-																				NEW_OP
-																				(
-																					OUT
-																					(
-																						"0"
-																					)
-																				)
-																			)
+																			0
 																		)
 																	)
 																)
@@ -558,13 +548,49 @@
 													)
 												)
 											)
+											(
+												NEW_OP
+											)
 										)
 									)
 								)
 							)
 						)
 					)
+					(
+						NEW_OP
+					)
 				)
+				(
+					NEW_OP
+					(
+						NEW_INIT
+						(
+							VAR_DECLARATION
+							(
+								'xxx'
+							)
+							(
+								1
+							)
+						)
+					)
+					(
+						NEW_OP
+						(
+							OUT
+							(
+								1
+							)
+						)
+						(
+							NEW_OP
+						)
+					)
+				)
+			)
+			(
+				NEW_STEP
 			)
 		)
 	)

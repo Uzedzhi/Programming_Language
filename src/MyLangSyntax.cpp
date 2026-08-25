@@ -2,43 +2,21 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
-
-
+#include <math.h>
 #include "../MyLibs/sassert.hpp"
 #include "../includes/MyLangFront.hpp"
 #include "../includes/MyLangDump.hpp"
 #include "../Smart_Stack/stack.hpp"
 #include "../MyLibs/helper_funcs.hpp"
+#include "../includes/MyLangHelpers.hpp"
 
-const char *GetNLinesDown(const char *StartStr, const char *str, int n) {
-    sassert(str,        ERR_PTR_NULL);
-    sassert(StartStr,   ERR_PTR_NULL);
+void syntax_error(int lin, LexArr_t *LexArr, Debug_Node_t **NodeArr, const char *format, ...) {
+    fprintf(stderr, MAGENTA "line: %d, Вид в дереве:\n" RESET, lin);
 
-    if (n < 0)
-        return NULL;
-
-    while (n && str > StartStr) {
-        str--;
-
-        if (*str == '\n' || *str == '\r')
-            n--;  
-    }
-
-    return str;
-}
-
-void RepeatChar(char ch, int n, FILE *fp) {
-    sassert(fp, ERR_PTR_NULL);
-
-    for (size_t j = 0; j < n; j++)
-        putc(ch, fp);
-}
-
-void syntax_error(LexArr_t *LexArr, Debug_Node_t **NodeArr, const char *format, ...) {
-    fprintf(stderr, "Вид в дереве:\n");
-
-    Debug_Node_t CurNode = **NodeArr;
-    for (int i = -RANGE; i <= RANGE; i++) {
+    for (int i = ((**NodeArr).line > RANGE + 1) ? -RANGE : 0; i <= RANGE; i++) {
+        Debug_Node_t CurNode = (*NodeArr)[i];
+        if (i == 0)
+            fprintf(stderr, GREEN);
         fprintf(stderr, "(%d) type: %s, ", i, AllValueTypesTxt[CurNode.type]);
         switch(CurNode.type) {
             case TYPE_NUM:   fprintf(stderr, "num: %d\n",  CurNode.value.num);                break;
@@ -47,41 +25,44 @@ void syntax_error(LexArr_t *LexArr, Debug_Node_t **NodeArr, const char *format, 
             case TYPE_OP:    fprintf(stderr, "op: %s\n",   AllOper[CurNode.value.oper].Dump); break;
             default:         fprintf(stderr, "not an op");                                    break;
         }
+
+        if (i == 0)
+            fprintf(stderr, RESET);
     }
 
-    fprintf(stderr, "\nВид в коде:\n");
+    fprintf(stderr, MAGENTA "\nВид в коде:\n" RESET);
 
-    size_t pos  = CurNode.pos;
-    int    line = CurNode.line;
+    size_t ErrPos = (*NodeArr)->pos;
+    int    line   = (*NodeArr)->line;
     va_list args;
     va_start(args, format);
 
-    const char *StartOfPrinting = GetNLinesDown(LexArr->FileBuf, LexArr->FileBuf + pos, RANGE);
-    for (int i = -RANGE; i <= RANGE && *StartOfPrinting; i++) {
-        int len = strcspn(StartOfPrinting, "\n\0");
-        fprintf(stderr, RESET "%d: %.*s", line + i, len, StartOfPrinting);
+    const char *CurPos = NULL;
 
-        if (i == 0) {
-            RepeatChar(' ', pos - (StartOfPrinting - LexArr->FileBuf), stderr);
-            fprintf(stderr, "/\\\n");
-            RepeatChar(' ', pos - (StartOfPrinting - LexArr->FileBuf), stderr);
-            fprintf(stderr, " |\n" RED);
+    if (line >= RANGE)
+        CurPos = GetNLinesDown(LexArr->FileBuf, LexArr->FileBuf + ErrPos, RANGE) + 1;
+    else
+        CurPos = LexArr->FileBuf;
+    
+    for (int i = -RANGE; i <= RANGE && *CurPos; i++) {
+        int len = strcspn(CurPos, "\n\0");
+        fprintf(stderr, RESET "%d: %.*s\n", line + i, len, CurPos);
+
+        if (CurPos >= ErrPos + LexArr->FileBuf - len - 1 && CurPos <= ErrPos + LexArr->FileBuf) {
+            RepeatChar(' ', ErrPos - (CurPos - LexArr->FileBuf) - 2, CurPos);
+            fprintf(stderr, RED "/\\\n");
+            RepeatChar(' ', ErrPos - (CurPos - LexArr->FileBuf) - 2, CurPos);
+            fprintf(stderr, "||\n");
             
             vfprintf(stderr, format, args);
+            fprintf(stderr, " \n");
         }
 
-        StartOfPrinting += len;
+        CurPos += len + 1;
     }
 
     va_end(args);
-}
-
-bool CheckIfOperNextAndInc(Debug_Node_t **NodeArr, LangOperType_e oper) {
-    bool is_oper = (ISOPER &&  ((**NodeArr).value.oper == (LangOperType_e) oper ||
-                               (**NodeArr).value.oper == OPER_NOP));
-    if (is_oper)
-        (*NodeArr)++;
-    return is_oper;
+    exit(NOK);
 }
 
 void PrintStrArr(char **str, size_t size) {
@@ -94,18 +75,6 @@ void PrintStrArr(char **str, size_t size) {
     }
 }
 
-int GetVarIndexInNameTable(LexArr_t *LexArr, char * var) {
-    sassert(LexArr, ERR_PTR_NULL);
-    sassert(var,    ERR_PTR_NULL);
-
-    for (size_t i = 0; i < LexArr->ScopeSize; i++) {
-        if (strcmp(var, LexArr->Scope[i]) == 0) {
-            return i;
-        }
-    }
-
-    return -1;
-}
 
 Node_t * GetVAR(Debug_Node_t **NodeArr, LexArr_t *LexArr, bool IsInit) {
     CHECK_ORSYNTAXERROR(ISVAR, "там где ожидалось название переменной его нету(");
@@ -113,10 +82,11 @@ Node_t * GetVAR(Debug_Node_t **NodeArr, LexArr_t *LexArr, bool IsInit) {
     char *name = (**NodeArr).value.str;
     Node_t *node = NewNode(TYPE_VAR, (LangElem_u){.str = name}, NULL, NULL);
 
-    int VarIndex = GetVarIndexInNameTable(LexArr, name);
+    int VarIndex = InArrayStr(LexArr->Scope, name, LexArr->ScopeSize);
     if (IsInit) {
         CHECK_ORSYNTAXERROR(VarIndex == -1, "переменная <%s> уже существует в этом scope!", name);
 
+        CheckArrayAndReallocate((void **) &(LexArr->Scope), LexArr->ScopeSize, &(LexArr->ScopeCapacity), sizeof(char *));
         LexArr->Scope[LexArr->ScopeSize] = name;
         LexArr->ScopeSize++;
     } else {
@@ -146,19 +116,47 @@ Node_t * GetFUNCPARAMS(Debug_Node_t **NodeArr, bool AllowingNums, LexArr_t *LexA
     return AllParams;
 }
 
-Node_t *GetFuncName(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
+char *GetFuncName(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
     char *FuncName = CALLOC_WITH_TYPE(MAX_STR_SIZE, char);
     
+    int left = MAX_STR_SIZE - 1;
     while (ISVAR) {
         char *name = (**NodeArr).value.str;
         (*NodeArr)++;
         
-        strcat(FuncName, name);
-        free(name);
+        int len = strlen(name);
+        if (left > len) {
+            strcat(FuncName, name);
+        } else {
+            CHECK_ORSYNTAXERROR(0, "имя функции слишком длинное");
+        }
+
+        left -= len;
     }
 
-    int index = GetVarIndexInNameTable(LexArr, FuncName);
+    return FuncName;
+}
+
+char * IntToAscii(int num) {
+    int numlen = (int) log10(num) + 2;
+    char *buf = CALLOC_WITH_TYPE(numlen + 1, char);
+    snprintf(buf, numlen, "%d", num);
+
+    return buf;
+}
+
+Node_t *PlaceFuncNameInNameTable(Debug_Node_t **NodeArr, LexArr_t *LexArr, int num) {
+    char *FuncName = GetFuncName(NodeArr, LexArr);
+
+    int index = InArrayStr(LexArr->Scope, FuncName, LexArr->ScopeSize);
     CHECK_ORSYNTAXERROR(index == -1, "функция <%s> уже существует", FuncName);
+
+    char *buf = IntToAscii(num);
+    int numindex = InArrayStr(LexArr->Scope, buf, LexArr->ScopeSize);
+    CHECK_ORSYNTAXERROR(numindex == -1, "функция с номером <%d> уже существует", num);
+    
+    CheckArrayAndReallocate((void **) &(LexArr->Scope), LexArr->ScopeSize - 1, &(LexArr->ScopeCapacity), sizeof(char *));
+    LexArr->Scope[LexArr->ScopeSize++] = buf;
     LexArr->Scope[LexArr->ScopeSize++] = FuncName;
 
     return NewNode(TYPE_VAR, {.str = FuncName}, NULL, NULL);
@@ -166,13 +164,15 @@ Node_t *GetFuncName(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
 
 Node_t * GetFUNC(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
     MATCH_ORSYNTAXERR(OPER_PAR_OPEN,  "У формулы нет номера в начале. Пример: (4) Формула для ...");
-    Node_t *value = GetVAR(NodeArr, LexArr, true);
+
+    Node_t *value = GetNUM(NodeArr, LexArr);
     MATCH_ORSYNTAXERR(OPER_PAR_CLOSE, "У номера формулы нет закрывающей скобки");
 
     MATCH_ORSYNTAXERR(OPER_FUNC_DECL_NAME, "вы наверно хотели обьявить формулу, но у нет ключевого слова \"%s\"", AllOper[OPER_FUNC_DECL_NAME].Text[0]);
-    Node_t *func = GetFuncName(NodeArr, LexArr);
-    Node_t *func_body = func->left;
+    Node_t *func = PlaceFuncNameInNameTable(NodeArr, LexArr, value->value.num);
+    
     func->left = NewNode(TYPE_OP, {.oper = OPER_FUNC_BODY}, NULL, NULL);
+    Node_t *func_body = func->left;
 
     MATCH_ORSYNTAXERR(OPER_IN_POINT, "у функции <%s> нету ключевого слова \"%s\" (да знаю что не хочется писать, но так красивее, напиши несколько букв, а то обижусь)", func->value.str, AllOper[OPER_IN_POINT].Text[0]);
     MATCH_ORSYNTAXERR(OPER_PAR_OPEN, "У функции с именем <%s> нет параметров (открывающейся скобки нет)", func->value.str);
@@ -197,10 +197,10 @@ Node_t * GetFUNCS(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
     Node_t * AllFuncs = NewNode(TYPE_OP, {.oper = OPER_NEW_FUNC}, NULL, NULL);
     Node_t * CurNode = AllFuncs;
 
-    while (CheckIfOperNextAndInc(NodeArr, OPER_FUNC_DECL_NAME)) {
+    while (CheckIfOperNext(NodeArr, OPER_PAR_OPEN)) {
         CurNode->left  = GetFUNC(NodeArr, LexArr);
 
-        if (CheckIfOperNext(NodeArr, OPER_FUNC_DECL_NAME))
+        if (CheckIfOperNext(NodeArr, OPER_PAR_OPEN))
             CurNode->right = NewNode(TYPE_OP, {.oper = OPER_NEW_FUNC}, NULL, NULL);
         
         CurNode = CurNode->right;
@@ -212,40 +212,35 @@ Node_t * GetFUNCS(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
 Node_t * GetOPS(Debug_Node_t **NodeArr, bool in_scope, LexArr_t *LexArr) {
     Node_t *Opers   = NewNode(TYPE_OP, (LangElem_u){.oper = OPER_NEW_OP}, NULL, NULL);
     Node_t *CurNode = Opers;
-    size_t iter     = 0;
 
-    while (!CheckIfOperNext(NodeArr, OPER_PROGRAM_END)      &&
-           !CheckIfOperNext(NodeArr, OPER_FUNC_DECL_NAME)   &&
-           !CheckIfOperNext(NodeArr, OPER_RETURN)           &&
-           !CheckIfOperNext(NodeArr, OPER_ELSE)             &&
-           !CheckIfOperNext(NodeArr, OPER_WHILE)            &&
-           !CheckIfOperNext(NodeArr, OPER_PATH_OF_SOLVING)  &&
-           !CheckIfOperNext(NodeArr, OPER_STEP)             &&
-           !CheckIfOperNext(NodeArr, OPER_EXCEPT)           &&
-           !CheckIfOperNext(NodeArr, OPER_NOTE)             &&
-           !CheckIfOperNext(NodeArr, OPER_NULL)) {
-        if (iter++ != 0) {
-            CurNode->right = NewNode(TYPE_OP, {.oper = OPER_NEW_OP}, NULL, NULL);
-            CurNode = CurNode->right;
-        }
+    while (CheckIfOperNext(NodeArr, OPER_IF)               ||
+           CheckIfOperNext(NodeArr, OPER_VAR_DECLARATION)  ||
+           CheckIfOperNext(NodeArr, OPER_WHILE)            ||
+           CheckIfOperNext(NodeArr, OPER_OUT)              ||
+           CheckIfOperNext(NodeArr, OPER_IN)               ||
+           CheckIfOperNext(NodeArr, OPER_ASSIGN)           ||
+           CheckIfOperNext(NodeArr, OPER_FUNC_CALL)        ||
+           CheckIfOperNext(NodeArr, OPER_SCOPE_CLOSE)      ||
+           CheckIfOperNext(NodeArr, OPER_SCOPE_OPEN)       ||
+           ISVAR) {
+        Node_t *op = NULL;
 
         if (CheckIfOperNextAndInc(NodeArr, OPER_SCOPE_CLOSE)) {
             CHECK_ORSYNTAXERROR(in_scope, "похоже вы открыли где то скобку и не закрыли ее");
-            break;
         } else if (CheckIfOperNextAndInc(NodeArr, OPER_SCOPE_OPEN)) {
             IN_PERSONAL_NAMETABLE(
-                CurNode->left = GetOPS(NodeArr, 1, LexArr);
+                op = GetOPS(NodeArr, true, LexArr);
             )
+        } else {
+            op = GetOP(NodeArr, LexArr);
         }
-        
-        Node_t *op = GetOP(NodeArr, LexArr);
-        DUMP_LANGNODE(&op, "состояние дерева после обработки одного оператора в функции GetOPS");
-
         if (!op)
             break;
-        CurNode->left = op;
-    }
 
+        CurNode->left  = op;
+        CurNode->right = NewNode(TYPE_OP, {.oper = OPER_NEW_OP}, NULL, NULL);
+        CurNode        = CurNode->right;
+    }
     return Opers;
 }
 
@@ -264,7 +259,7 @@ Node_t * GetCMP(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
             (*NodeArr)++;
             break;
         default:
-            syntax_error(LexArr, NodeArr, "нету знака сравнения в if");
+            CHECK_ORSYNTAXERROR(0, "нету знака сравнения в if");
             break;
     }
 
@@ -284,9 +279,8 @@ Node_t * GetIF(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
         AllCompares = AllCompares->right;
         AllCompares->left = GetCMP(NodeArr, LexArr);
     }
-    if (!AllCompares || !(AllCompares->left))
-        syntax_error(LexArr, NodeArr, "отсутствует сравнение в if");
 
+    CHECK_ORSYNTAXERROR(AllCompares && AllCompares->left, "отсутствует сравнение в if");
     MATCH_ORSYNTAXERR(OPER_THEN, "нету то после if");
     IN_PERSONAL_NAMETABLE(
         IfStatement->right = NewNode(TYPE_OP, {.oper = OPER_IF_BODY}, NULL, NULL);
@@ -312,9 +306,7 @@ Node_t * GetIF(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
 Node_t *GetINIT(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
     Node_t *Init    = NewNode(TYPE_OP, {.oper = OPER_VAR_DECLARATION}, NULL, NULL);
     Init->left      = GetVAR(NodeArr, LexArr, true);
-    if (!Init->left)
-        syntax_error(LexArr, NodeArr, "нету переменной для инициализации");
-    
+    CHECK_ORSYNTAXERROR(Init->left, "нету переменной для инициализации");
     MATCH_ORSYNTAXERR(OPER_ASSIGN, "нету равно после инициализации");
     Init->right = GetE(NodeArr, LexArr);
     return Init;
@@ -362,31 +354,57 @@ Node_t * GetWHILE(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
     )
     return WhileNode;
 }
+
+bool CheckIfOperNextAndInc(Debug_Node_t **NodeArr, LangOperType_e oper) {
+    bool is_oper = (ISOPER &&  ((**NodeArr).value.oper == (LangOperType_e) oper ||
+                               (**NodeArr).value.oper == OPER_NOP));
+    if (is_oper)
+        (*NodeArr)++;
+    return is_oper;
+}
+
+char *FindMatchingFunc(Debug_Node_t **NodeArr, LexArr_t *LexArr, int num) {
+    char *buf = IntToAscii(num);
+    int index = InArrayStr(LexArr->Scope, buf, LexArr->ScopeSize);
+
+    CHECK_ORSYNTAXERROR(index != -1, "функции которую вы пытаетесь запустить нету");
+    free(buf);
+
+    return LexArr->Scope[index + 1];
+}
   
 Node_t * GetFUNC_RUN(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
-    Node_t *FUNC_RUNNode = NewNode(TYPE_OP, {.oper = OPER_FUNC_CALL}, NULL, NULL);
-    MATCH_ORSYNTAXERR(OPER_PAR_OPEN,    "отсутствует открывающаяся скобка в названии функции");
+    char *FuncName = NULL;
+    if (CheckIfOperNextAndInc(NodeArr, OPER_PAR_OPEN)) {
+        CHECK_ORSYNTAXERROR(ISNUM, "для вызова формулы с помощью скобок синтаксис такой: из формулы (<номер функции>) находим ...");
+        Node_t *num = GetNUM(NodeArr, LexArr);
 
-    Node_t *func = NewNode(TYPE_OP, {.oper = OPER_FUNC_CALL}, NULL, NULL);
-    func->left = GetVAR(NodeArr, LexArr, false);
+        FuncName = FindMatchingFunc(NodeArr, LexArr, num->value.num);
+        MATCH_ORSYNTAXERR(OPER_PAR_CLOSE, "закрывающую скобку забыл");
+    } else {
+        MATCH_ORSYNTAXERR(OPER_DLYA, "если вы не вызываете функцию через обращение (2), то синтаксис должен быть такой: \"%s %s <name>\"", AllOper[OPER_FUNC_CALL].Text[0], AllOper[OPER_DLYA].Text[0]);
+        FuncName = GetFuncName(NodeArr, LexArr);
+    }
 
-    MATCH_ORSYNTAXERR(OPER_PAR_CLOSE,   "отсутствует закрывающаяся скобка в названии функции");
+    Node_t *func      = NewNode(TYPE_OP,  {.oper = OPER_FUNC_CALL}, NULL, NULL);
+    func->left        = NewNode(TYPE_OP,  {.oper = OPER_FUNC_VARS}, NULL, NULL);
+
+    Node_t *func_vars = func->left;
+    func_vars->left   = NewNode(TYPE_VAR, {.str = FuncName},        NULL, NULL);
     MATCH_ORSYNTAXERR(OPER_FINDING,     "ничего из функции не находишь хорош");
 
-    FUNC_RUNNode->left = GetVAR(NodeArr, LexArr, true);
-    MATCH_ORSYNTAXERR(OPER_IN_POINT,    "не написано в какой точке");
+    CHECK_ORSYNTAXERROR(ISVAR, "из формулы ... находим что??? Напиши название переменной балбес");
+    func_vars->right = GetVAR(NodeArr, LexArr, true);
+    MATCH_ORSYNTAXERR(OPER_IN_POINT,    "из формулы ... находим ... иииии не написано в какой точке, маладесс");
 
     MATCH_ORSYNTAXERR(OPER_PAR_OPEN,    "отсутствует открывающаяся скобка в обозначении точки");
     func->right = GetFUNCPARAMS(NodeArr, true, LexArr);
-
     MATCH_ORSYNTAXERR(OPER_PAR_CLOSE,   "отсутствует закрывающаяся скобка в обозначении точки");
-    FUNC_RUNNode->right = func;
-    return FUNC_RUNNode;
+    return func;
 }
 
 Node_t *GetIN(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
-    if (!ISVAR)
-        syntax_error(LexArr, NodeArr, "нельзя дать значение не переменной!");
+    CHECK_ORSYNTAXERROR(ISVAR, "нельзя дать значение не переменной!");
     
     Node_t * in = NewNode(TYPE_OP, {.oper = OPER_IN}, NULL, NULL);
 
@@ -434,21 +452,18 @@ Node_t * GetOP(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
 
 }
 
-Node_t * GetNOTES(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
-    Debug_Node_t **OldNodeArr  = NodeArr;
-    *NodeArr = (LexArr->NodeArr + LexArr->Excepts_ptr + 1);
+void GetNOTES(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
+    Debug_Node_t *NotesPtr = (LexArr->NodeArr + LexArr->Excepts_ptr + 1);
 
-    while (CheckIfOperNextAndInc(NodeArr, OPER_NOTE)) {
-        if (LexArr->NotesSize >= LexArr->NotesCapacity) {
-            LexArr->NotesCapacity *= 2;
-            reallocate_array((void **) &LexArr->Notes, LexArr->NotesCapacity, LexArr->NotesCapacity * sizeof(Node_t));
-        }
-        CHECK_ORSYNTAXERROR(ISNUM, "после примечания обяз должен быть номер примечания ты ПОНЕЛ?!?!");
+    while (CheckIfOperNextAndInc(&NotesPtr, OPER_NOTE)) {
+        CheckArrayAndReallocate((void **) &(LexArr->Notes), LexArr->NotesSize, &(LexArr->NotesCapacity), sizeof(Node_t));
+        CHECK_ORSYNTAXERROR_X(&NotesPtr, LexArr, NotesPtr->type == TYPE_NUM, 
+                             "после примечания обяз должен быть номер примечания ты ПОНЕЛ?!?!");
+        Node_t *num = GetNUM(&NotesPtr, LexArr);
+        MATCH_ORSYNTAXERR_X(&NotesPtr, LexArr, OPER_COLON, 
+                            "ну вот пишут примечание <число>:, так сложно написать : чтоли?")
 
-        Node_t *num = GetNUM(NodeArr, LexArr);
-        MATCH_ORSYNTAXERR(OPER_COLON, "ну вот пишут примечание <число>:, так сложно написать : чтоли?");
-
-        num->left = GetOPS(NodeArr, false, LexArr);
+        num->left = GetOPS(&NotesPtr, false, LexArr);
         LexArr->Notes[LexArr->NotesSize++] = *num;
     }
 }
@@ -456,7 +471,7 @@ Node_t * GetNOTES(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
 Node_t * GetNOTE(Debug_Node_t **NodeArr, LexArr_t *LexArr, int NoteNum) {
     for (int i = 0; i < LexArr->NotesSize; i++) {
         if (NoteNum == LexArr->Notes[i].value.num)
-            return LexArr->Notes[i]->left;
+            return LexArr->Notes[i].left;
     }
 
     return NULL;
@@ -466,34 +481,32 @@ Node_t * GetSTEPS(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
     if (CheckIfOperNext(NodeArr, OPER_PROGRAM_END))
         return NULL;
 
-    Node_t *cur_step  = NULL;
-    Node_t *next_step = NULL;
-    Node_t *steps     = next_step;
+    Node_t *steps = NewNode(TYPE_OP, {.oper = OPER_NEW_STEP}, NULL, NULL);
+    Node_t *next_step = steps;
     while (!CheckIfOperNext(NodeArr, OPER_PROGRAM_END) &&
             CheckIfOperNextAndInc(NodeArr, OPER_STEP)) {
         
-        next_step = NewNode(TYPE_OP, {.oper = OPER_NEW_STEP}, NULL, NULL);
-        cur_step  = next_step->left;
-
         CHECK_ORSYNTAXERROR(ISNUM, "после слов \"%s\" должен стоять номер, помоему это логично", AllOper[OPER_STEP].Text[0]);
-        cur_step = GetNUM(NodeArr, LexArr);
+        Node_t *step_body = GetNUM(NodeArr, LexArr);
         MATCH_ORSYNTAXERR(OPER_COLON, "а после номера у шага должна стоять :, так большой папа сказал");
 
-        Node_t *cur_step_body = GetOPS(NodeArr, false, LexArr);
-        cur_step->left  = cur_step_body;
+        step_body->left = GetOPS(NodeArr, false, LexArr);
 
         if (CheckIfOperNextAndInc(NodeArr, OPER_EXCEPT)) {
             CHECK_ORSYNTAXERROR(ISNUM, "после ссылки на примечание должен быть номер примечания балбес");
 
             Node_t *num = GetNUM(NodeArr, LexArr);
-            cur_step->right = GetNOTE(NodeArr, LexArr, num->value.num);
+            step_body->right = GetNOTE(NodeArr, LexArr, num->value.num);
         }
 
+        next_step->left  = step_body;
+        next_step->right = NewNode(TYPE_OP, {.oper = OPER_NEW_STEP}, NULL, NULL);
         next_step = next_step->right;
     }
 
     return steps;
 }
+
 Node_t * GetSECT(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
     Node_t * value = NewNode(TYPE_OP, {.oper = OPER_PROGRAM_START}, NULL, NULL);
 
@@ -502,14 +515,17 @@ Node_t * GetSECT(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
     else
         value->left = GetFUNCS(NodeArr, LexArr);
 
-    DUMP_LANGNODE(&value, "состояние дерева после парсинга всех функций");
+    DUMP_LANGNODE(value, "состояние дерева после парсинга всех функций");
     MATCH_ORSYNTAXERR(OPER_PATH_OF_SOLVING, "без хода решений компилируешь негодяй");
 
     GetNOTES(NodeArr, LexArr);
+    DUMP_LANGNODE(LexArr->Notes, "состояние дерева после парсинга всех примечаний");
+
     value->right = GetSTEPS(NodeArr, LexArr);
-    MATCH_ORSYNTAXERR(OPER_STEP, "все решение должно делиться на шаги. После хода решений не обнаружен первый шаг.")
-    value->right = GetOPS(NodeArr, false, LexArr);
-    DUMP_LANGNODE(&value, "финальное состояние дерева после всех операций");
+
+    CHECK_ORSYNTAXERROR(value->right, "все решение должно делиться на шаги. После хода решений не обнаружен первый шаг.")
+    DUMP_LANGNODE(value, "финальное состояние дерева");
+
     return value;
 }
 
@@ -548,9 +564,7 @@ Node_t * GetP(Debug_Node_t **NodeArr, LexArr_t *LexArr) {
     if (CheckIfOperNextAndInc(NodeArr, OPER_PAR_OPEN)) {
         Node_t * value = GetE(NodeArr, LexArr);
 
-        if (!CheckIfOperNextAndInc(NodeArr, OPER_PAR_CLOSE)) {
-            syntax_error(LexArr, NodeArr, "no closing par");
-        }
+        MATCH_ORSYNTAXERR(OPER_PAR_CLOSE, "no closing parenthesis");
         return value;
     }
     return GetExpr(NodeArr, LexArr);
@@ -610,17 +624,6 @@ Node_t * create_node() {
     return CALLOC_WITH_TYPE(1, Node_t);
 }
 
-Node_t * NewNode(LangType_e type, LangElem_u value, Node_t *left, Node_t *right) {
-    Node_t * node = create_node();
-    sassert(node, ERR_PTR_NULL);
-
-    node->type  = type;
-    node->value = value;
-    node->left  = left;
-    node->right = right;
-    return node;
-}
-
 LangOperType_e GetArthmOper(Debug_Node_t **NodeArr) {
     if ((**NodeArr).type == TYPE_OP && (**NodeArr).value.oper >= OPER_ARTHM_MUL && (**NodeArr).value.oper < NumOfOpers)
         return (**NodeArr).value.oper;
@@ -632,7 +635,9 @@ Node_t * MakeTreeFromArrayOfLexems(LexArr_t *LexArr) {
     sassert(LexArr, ERR_PTR_NULL);
     
     Debug_Node_t *NodeArr = LexArr->NodeArr;
-
+    for (size_t i = 0; i < LexArr->ScopeSize; i++) {
+        SMART_FREE(LexArr->Scope[i]);
+    }
     LexArr->ScopeSize = 0;
     Node_t *Node = GetG(&NodeArr, LexArr);
     return Node;

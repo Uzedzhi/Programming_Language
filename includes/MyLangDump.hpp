@@ -4,6 +4,10 @@
 #include "MyLangVars.hpp"
 #include <stdio.h>
 
+#ifndef dump_site_name 
+#define dump_site_name "dump.html"
+#endif
+
 #ifdef DEBUG
 #define STARTTXTDUMPS() \
     PrintSiteHeader();
@@ -17,8 +21,8 @@
 
 #ifdef DEBUG
 #define DUMP_LANGNODE(node, str) {\
-    create_tree_graph(*node);\
-    print_to_html(*node, false, str);\
+    create_tree_graph(node);\
+    print_to_html(node, true, str);\
 }
 
 #define DUMPNODE(node, need_division, ...) {                                \
@@ -41,7 +45,7 @@
 #endif
 
 LangErr_t create_tree_graph(Node_t *tree);
-LangErr_t print_nodes_to_dump_file(Node_t * node, Node_t * tree, FILE *fp, int *counter);
+void print_nodes_to_dump_file(Node_t * node, Node_t * tree, FILE *fp);
 void print_divider(FILE * fp);
 void PrintSiteToes();
 void PrintSiteHeader();

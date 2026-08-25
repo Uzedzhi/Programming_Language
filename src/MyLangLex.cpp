@@ -10,8 +10,10 @@
 #include "../MyLibs/helper_funcs.hpp"
 #include "../MyLibs/sassert.hpp"
 #include "../Smart_Stack/stack.hpp"
+#include "../includes/MyLangDump.hpp"
+#include "../includes/MyLangHelpers.hpp"
 
-char lang_last_error[ERROR_BUF_MAX_SIZE] = {};
+static char lang_last_error[ERROR_BUF_MAX_SIZE] = {};
 
 void lex_perror_file(FILE* out) {
     if (out)
@@ -28,6 +30,12 @@ LangErr_t ArrayOfLexemsCtor(LexArr_t * Arr) {
     Arr->Scope = CALLOC_WITH_TYPE(START_INIT_SIZE, char *);
     RETURN_ERR(Arr->Scope,      ERR_CALLOC_FAIL, "не удалось создать массив звеньев размером %zu", START_INIT_SIZE);
 
+    Arr->Notes = CALLOC_WITH_TYPE(START_INIT_SIZE, Node_t);
+    RETURN_ERR(Arr->Notes,      ERR_CALLOC_FAIL, "не удалось создать массив звеньев размером %zu", START_INIT_SIZE);
+
+    Arr->NotesSize          = 0;
+    Arr->NotesCapacity      = START_INIT_SIZE;
+
     Arr->ScopeSize          = 0;
     Arr->ScopeCapacity      = START_INIT_SIZE;
 
@@ -35,140 +43,24 @@ LangErr_t ArrayOfLexemsCtor(LexArr_t * Arr) {
     Arr->NodeArrCapacity    = START_INIT_SIZE;
 
     Arr->ScopeBorders = StackCtor();
-    #ifdef DEBUG
-        STARTTXTDUMPS();
-    #endif
+
+    STARTTXTDUMPS();
 
     return OK;
 }
 
-void NodeDtor(Debug_Node_t **node) {
-    sassert(node, ERR_PTR_NULL);
-
-    if (*node != NULL && (*node)->left != NULL)
-        NodeDtor(&((*node)->left));
-    if (*node != NULL && (*node)->right != NULL)
-        NodeDtor(&((*node)->right));
-    SMART_FREE(*node);
-    *node = NULL;
-}
-
-
 void ArrayOfLexemsDtor(LexArr_t * LexArr) {
     if (LexArr != NULL) {
-        for (size_t i = 0; i < LexArr->ScopeSize; i++) {
-            SMART_FREE(LexArr->Scope[i]);
+        for (size_t i = 0; i < LexArr->NodeArrCapacity; i++) {
+            if (LexArr->NodeArr && (LexArr->NodeArr[i].type == TYPE_VAR || LexArr->NodeArr[i].type == TYPE_STR)) {
+                SMART_FREE(LexArr->NodeArr[i].value.str);
+            }
         }
         SMART_FREE(LexArr->Scope);
         stackDtor(LexArr->ScopeBorders);
-        NodeDtor(&(LexArr->NodeArr));
-        
-        SMART_FREE(LexArr);
     }
 
-    #ifdef DEBUG
-        FINISHTXTDUMPS();
-    #endif
-}
-
-LangOperType_e CheckOperType(const char * const FileBuf, int *str_len) {
-    sassert(FileBuf, ERR_PTR_NULL);
-
-    LangOperType_e  PrevFoundOperNum    = OPER_NOP;
-    int             PrevFoundStrLen     = 0;
-    for (size_t i = 0; i < NumOfOpers; i++) {
-        for (size_t j = 0; j < MAX_STR_VAR; j++) {
-            string CurOperStr = AllOper[i].Text[j];
-            if (!CurOperStr)
-                continue;
-
-            int CurStrLen = strlen(CurOperStr);
-            if (CurStrLen > PrevFoundStrLen && strncmp(FileBuf, CurOperStr, CurStrLen) == 0) {
-                PrevFoundStrLen = CurStrLen;
-                PrevFoundOperNum = (LangOperType_e) i;
-            }
-        }
-    }
-
-    *str_len = PrevFoundStrLen;
-    return PrevFoundOperNum;
-}
-
-void SSkipLine(const char *str, size_t *Pos) {
-    while (str[*Pos] != '\n' && str[*Pos] != '\0') {
-        (*Pos)++;
-    }
-}
-
-int GetVarIndexInArr(scope_el_t *Arr, const char * Var, size_t ArrSize) {
-    for (size_t i = 0; i < ArrSize; i++) {
-        if (strcmp(Arr[i].VarName, Var) == 0)
-            return i;
-    }
-    return -1;
-}
-
-bool IsEngAlph(char ch) {
-    if (('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z'))
-        return true;
-    return false;
-}
-
-int IsRussianNext(const char *buf) {
-    unsigned char b0 = (unsigned char) buf[0];
-    unsigned char b1 = (unsigned char) buf[1];
-
-    if (b0 == 0xD0) {
-        if (b1 == 0x81) return 1;                 // Ё
-        if (b1 >= 0x90 && b1 <= 0xBF) return 1;   // А-Я
-        return 0;
-    }
-
-    if (b0 == 0xD1) {
-        if (b1 >= 0x80 && b1 <= 0xAF) return 1;   // р-я
-        if (b1 == 0x91) return 1;                 // ё
-        return 0;
-    }
-
-    return 0;
-}
-
-int UTF8_tolower_char(unsigned char *ch) {
-
-    // А-П (0xD090 - 0xD09F) -> а-п (0xD0B0 - 0xD0BF)
-    if (ch[0] == 0xD0 && ch[1] >= 0x90 && ch[1] <= 0x9F) {
-        ch[1] += 0x20;
-        return 2;
-    }
-    
-    // Р-Я (0xD0A0 - 0xD0AF) -> р-я (0xD180 - 0xD18F)
-    if (ch[0] == 0xD0 && ch[1] >= 0xA0 && ch[1] <= 0xAF) {
-        ch[0]  = 0xD1;
-        ch[1] -= 0x20;
-        return 2;
-    }
-    
-    // 'Ё' (0xD081) -> 'ё' (0xD191)
-    if (ch[0] == 0xD0 && ch[1] == 0x81) {
-        ch[0] = 0xD1;
-        ch[1] = 0x91;
-        return 2;
-    }
-
-    return 1;
-}
-
-void UTF8_tolower(const char *buf)
-{
-    if (!buf) return;
-
-    size_t i = 0;
-    while (buf[i] != '\0') {
-        if (buf[i + 1] != '\0')
-            i += UTF8_tolower_char((unsigned char *) buf + i);
-        else
-            break;
-    }
+    FINISHTXTDUMPS();
 }
 
 LangErr_t FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
@@ -187,20 +79,13 @@ LangErr_t FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
 
     const char *FileBuf = LexArr->FileBuf;
     size_t Pos  = 0;
-    int    line = 0;
+    int    line = 2;
     UTF8_tolower(FileBuf);
 
     size_t NextIndex = 0;
     while(FileBuf[Pos] != '\0') {
-        if (LexArr->NodeArrSize >= LexArr->NodeArrCapacity - 1) {
-            LexArr->NodeArrCapacity *= 2;
-            reallocate_array((void**) &(LexArr->NodeArr), LexArr->NodeArrCapacity, LexArr->NodeArrCapacity * sizeof(Node_t));
-        }
-
-        if (LexArr->ScopeSize >= LexArr->ScopeCapacity - 1) {
-            LexArr->ScopeCapacity *= 2;
-            reallocate_array((void**) &(LexArr->Scope), LexArr->ScopeCapacity, LexArr->ScopeCapacity * sizeof(Node_t));
-        }
+        CheckArrayAndReallocate((void **) &(LexArr->Scope),   LexArr->ScopeSize,   &(LexArr->ScopeCapacity),   sizeof(char *));
+        CheckArrayAndReallocate((void **) &(LexArr->NodeArr), LexArr->NodeArrSize, &(LexArr->NodeArrCapacity), sizeof(Debug_Node_t));
 
         // SKIP SPACE
         while (isspace(FileBuf[Pos])) {
@@ -238,42 +123,35 @@ LangErr_t FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
         }
 
         // VAR
-        if ((FileBuf[Pos]) || IsRussianNext(FileBuf + Pos)) {
+        if (isalnum(FileBuf[Pos]) || IsRussianNext(FileBuf + Pos)) {
             const char * s2 = FileBuf + Pos;
             size_t len = 0;
 
             int IsRussian = false;
 
             while (isalnum(FileBuf[Pos]) || (IsRussian = IsRussianNext(FileBuf + Pos))) {
-                if (IsRussian)
+                if (IsRussian) {
                     Pos += 2; // russian character is 2 bytes
-                else
+                    len += 2;
+                } else {
                     Pos++;
-                len++;
+                    len++;
+                }
             }
 
             char * Id = CALLOC_WITH_TYPE(len + 1, char);
             strncpy(Id, s2, len);
 
-            int VarInd = GetVarIndexInArr(LexArr->Scope, Id, LexArr->ScopeSize);
-            
-            if (LexArr->ScopeSize >= LexArr->ScopeCapacity)
-                reallocate_array((void **) LexArr->Scope, LexArr->ScopeCapacity,
-                                 LexArr->ScopeCapacity * 2 * sizeof(char *));
-
-            if (VarInd == -1) { 
-                if (len > 1)
-                    fprintf(stderr, CYAN "WARNING: " WHITE "your variable <%s>\n"
-                                         "\t is more than 1 character long, it is inappropiate in math\n", Id);
-                
+            CheckArrayAndReallocate((void **) &(LexArr->Scope), LexArr->ScopeSize, &(LexArr->ScopeCapacity), sizeof(char *));
+            int VarInd = InArrayStr(LexArr->Scope, Id, LexArr->ScopeSize);
+            if (VarInd == -1) {
                 LexArr->Scope[LexArr->ScopeSize] = Id;
                 VarInd = LexArr->ScopeSize++;
             } else {
                 free(Id);
             }
 
-
-            LexArr->NodeArr[(LexArr->NodeArrSize)++] = {TYPE_VAR, {.str = LexArr->Scope[VarInd]}, NULL, NULL, Pos, line};
+            LexArr->NodeArr[(LexArr->NodeArrSize)++] = {TYPE_VAR, {.str = strdup(LexArr->Scope[VarInd])}, NULL, NULL, Pos, line};
             continue;
         }
 
@@ -288,11 +166,6 @@ LangErr_t FillArrayOfLexems(LexArr_t *LexArr, const char *file_name) {
     return OK;
 }
 
-static void PrintTabulations(FILE *fp, size_t n) {
-    for (size_t i = 0; i < n; ++i)
-        fprintf(fp, "\t");
-}
-
 LangErr_t PrintNodeSexprToFile(FILE *fp, Node_t *Node) {
     static int Tabulation = 0;
 
@@ -303,12 +176,10 @@ LangErr_t PrintNodeSexprToFile(FILE *fp, Node_t *Node) {
     PrintTabulations(fp, Tabulation);
     size_t VarIndex = -1;
     switch(Node->type) {
-        case TYPE_VAR:
-        case TYPE_STR:   
-            fprintf(fp, "\"%s\"\n", Node->value.str);
-            break;
-        case TYPE_NUM:   fprintf(fp, "\"%d\"\n",  Node->value.num);             break;
-        case TYPE_OP:    fprintf(fp, "%s\n",   AllOper[Node->value.oper].Tree); break;
+        case TYPE_VAR:  fprintf(fp, "\'%s\'\n", Node->value.str);               break;
+        case TYPE_STR:  fprintf(fp, "\"%s\"\n", Node->value.str);               break;
+        case TYPE_NUM:  fprintf(fp, "%d\n",     Node->value.num);               break;
+        case TYPE_OP:   fprintf(fp, "%s\n",   AllOper[Node->value.oper].Tree);  break;
         default:
             RETURN_ERR(0, NOK, "HOW TF");
         }
@@ -375,8 +246,10 @@ int main(int argc, char * argv[]) {
         return NOK;
     }
     PrintProgramToFile(argv[2], NodeTree);
-
+    
     ArrayOfLexemsDtor(&LexArr);
     free(NodeTree);
+
+    fprintf(stdout, GREEN "Tree file was made successfully\n" RESET);
     return OK;
 }

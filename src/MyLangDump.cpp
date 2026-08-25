@@ -3,15 +3,16 @@
 
 #include "../includes/MyLangVars.hpp"
 #include "../includes/MyLangDump.hpp"
-#include "../my_libs/sassert.hpp"
+#include "../MyLibs/sassert.hpp"
 
-static int count_graph_files = 0;
+int count_graph_files = 0;
 
 void PrintSiteHeader() {
     if (count_graph_files != 0)
         return;
     FILE * fp = fopen(dump_site_name, "w");
     sassert(fp, ERR_PTR_NULL);
+    
     fprintf(fp, "<!DOCTYPE html>\n"
                 "<html lang=\"ru\">\n"
                 "<head>\n"
@@ -56,7 +57,11 @@ void PrintSiteToes() {
 }
 
 void print_divider(FILE * fp) {
-    fprintf(fp, "<h1 style=\"color: #a30f7eff\">||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||</h1>\n");
+    fprintf(fp, "<h1 style=\"color: #a30f7eff\">");
+    for (size_t i = 0; i < 1000; i++) {
+        putc('|', fp);
+    }
+    fprintf(fp, "</h1>\n");
 }
 
 void print_to_html(Node_t *tree, bool needs_division, const char * str) {
@@ -70,7 +75,7 @@ void print_to_html(Node_t *tree, bool needs_division, const char * str) {
 
     fprintf(fp, "<h2>%s</h2>", str);
     fprintf(fp, "<div class=\"images\">\n"
-                "<img src=\"../graph/graph%d.png\" class=\"img1\">\n</div>\n",  count_graph_files);
+                "<img src=\"graph/graph%d.png\" class=\"img1\">\n</div>\n",  count_graph_files);
     count_graph_files++;
     fclose(fp);
 }
@@ -92,13 +97,11 @@ void GraphDumpPrintNode(FILE *fp, Node_t *node) {
             fprintf(fp, "<TR><TD COLSPAN=\"2\"> <FONT POINT-SIZE=\"16\" COLOR=\"#4d545eff\"> val = </FONT> <FONT POINT-SIZE=\"18\">%s</FONT></TD></TR>\n", AllOper[node->value.oper].Dump);
             break;
         case TYPE_VAR:
-            fprintf(fp, "<TR><TD COLSPAN=\"2\"> <FONT POINT-SIZE=\"16\" COLOR=\"#4d545eff\"> val = </FONT> <FONT POINT-SIZE=\"18\">%s</FONT></TD></TR>\n", node->value.var_name);
+            fprintf(fp, "<TR><TD COLSPAN=\"2\"> <FONT POINT-SIZE=\"16\" COLOR=\"#4d545eff\"> val = </FONT> <FONT POINT-SIZE=\"18\">%s</FONT></TD></TR>\n", node->value.str);
             break;
         default:
             fprintf(fp, "unsopported type: TYPE_STR\n");
             break;
-
-
     }
     fprintf(fp, "<TR><TD COLSPAN=\"2\"> <FONT POINT-SIZE=\"14\" COLOR=\"#64748B\">address: %p</FONT> </TD></TR>\n", node);
     fprintf(fp, "<TR>\n");
@@ -117,11 +120,11 @@ void GraphDumpPrintNode(FILE *fp, Node_t *node) {
 
 LangErr_t create_tree_graph(Node_t *tree) {
     sassert(tree, ERR_PTR_NULL);
+    char command[MAX_STR_SIZE] = {};
+    snprintf(command, MAX_STR_SIZE - 1, "dot -Gdpi=80 -Tpng -o graph/graph%d.png", count_graph_files);
 
-    int counter = 0;
-
-    FILE * fp = fopen(dump_graph_txt_file_name, "w");
-    sassert(fp, ERR_PTR_NULL);
+    FILE *fp = popen(command, "w");
+    RET_ASSERT(fp, ERR_UNDEFINED_CMD, "Проверьте установлен ли dot на вашем компьютере");
 
     fprintf(fp, "digraph {\n"
                 "rankdir=TB\n"
@@ -134,34 +137,30 @@ LangErr_t create_tree_graph(Node_t *tree) {
                 "margin=\"0.06,0.04\"]\n");
     GraphDumpPrintNode(fp, tree);
 
-    int count = 0;
-    print_nodes_to_dump_file(tree, tree, fp, &count);
+    print_nodes_to_dump_file(tree, tree, fp);
     fprintf(fp, "}");
-    fclose(fp);
-
-    char command[MAX_STR_SIZE] = {};
-    snprintf(command, MAX_STR_SIZE - 1, "dot graph/graph.txt -Gdpi=80 -Tpng -o graph/graph%d.png > /dev/null", count_graph_files);
-    if (system(command) != 0) {
-        fprintf(stderr, "%s", command);
-    }
+    pclose(fp);
     return OK;
 }
 
-LangErr_t print_nodes_to_dump_file(Node_t * node, Node_t * tree, FILE *fp, int *counter) {
+void print_nodes_to_dump_file(Node_t * node, Node_t * tree, FILE *fp) {
+    sassert(fp, ERR_PTR_NULL);
+
+    static int counter = 0;
     if (node == NULL)
-        return OK;
-    sassert(fp,     ERR_PTR_NULL);
+        return;
 
     GraphDumpPrintNode(fp, node);
-    (*counter)++;
+    counter++;
     if (node->left != NULL) {
         fprintf(fp, "tree_node_info%p:left->tree_node_info%p[color=\"#2563eb\", label=\"L\", fontcolor=\"#0000ff\" , minlen=2]\n", node, node->left);
-        print_nodes_to_dump_file(node->left, tree, fp, counter);
-    }
-    if (node->right != NULL) {
-        fprintf(fp, "tree_node_info%p:right->tree_node_info%p[color=\"#db2777\", label=\"R\", fontcolor=\"#ff0000\" , minlen=2]\n", node, node->right);
-        print_nodes_to_dump_file(node->right, tree, fp, counter);
+        print_nodes_to_dump_file(node->left, tree, fp);
     }
 
-    return OK;
+    if (node->right != NULL) {
+        fprintf(fp, "tree_node_info%p:right->tree_node_info%p[color=\"#db2777\", label=\"R\", fontcolor=\"#ff0000\" , minlen=2]\n", node, node->right);
+        print_nodes_to_dump_file(node->right, tree, fp);
+    }
+
+    return;
 }

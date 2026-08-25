@@ -1,0 +1,510 @@
+; ============================================================
+; Сгенерировано бекэндом MyLang. Руками не править, обидится.
+; ============================================================
+default rel
+
+extern printf
+extern scanf
+global main
+
+section .rodata
+FMT_IN:     db "%lld", 0
+FMT_OUT:    db "%lld", 10, 0
+
+section .text
+
+; =============================================================
+;  ход решения
+; =============================================================
+main:
+    push rbp
+    mov  rbp, rsp
+    sub  rsp, 512
+
+; ---------- Шаг №1 ----------
+; спросим у зала значение a
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rsi, [rbp - 8]
+    lea  rdi, [rel FMT_IN]
+    xor  eax, eax
+    call scanf wrt ..plt
+    mov  rsp, rbx
+; спросим у зала значение b
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rsi, [rbp - 16]
+    lea  rdi, [rel FMT_IN]
+    xor  eax, eax
+    call scanf wrt ..plt
+    mov  rsp, rbx
+; спросим у зала значение c
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rsi, [rbp - 24]
+    lea  rdi, [rel FMT_IN]
+    xor  eax, eax
+    call scanf wrt ..plt
+    mov  rsp, rbx
+; примечание к шагу №1 (обработчик, вызывается по jmp .Note_0)
+    jmp  .NoteEnd_0
+.Note_0:
+    mov  rax, 1
+    push rax
+    pop  rax
+    mov  qword [rbp - 32], rax        ; условимся xxx = ...
+; напишем ...
+    mov  rax, 1
+    push rax
+    pop  rsi
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rdi, [rel FMT_OUT]
+    xor  eax, eax
+    call printf wrt ..plt
+    mov  rsp, rbx
+.NoteEnd_0:
+
+; ---------- Шаг №2 ----------
+; ---------- if #1 ----------
+    mov  rax, qword [rbp - 8]         ; a
+    push rax
+    mov  rax, 0
+    push rax
+    pop  rbx
+    pop  rax
+    cmp  rax, rbx
+    sete  al
+    movzx rax, al
+    push rax
+    pop  rax
+    test rax, rax
+    je   .IfElse_1
+; ---------- if #2 ----------
+    mov  rax, qword [rbp - 16]        ; b
+    push rax
+    mov  rax, 0
+    push rax
+    pop  rbx
+    pop  rax
+    cmp  rax, rbx
+    sete  al
+    movzx rax, al
+    push rax
+    pop  rax
+    test rax, rax
+    je   .IfElse_2
+; ---------- if #3 ----------
+    mov  rax, qword [rbp - 24]        ; c
+    push rax
+    mov  rax, 0
+    push rax
+    pop  rbx
+    pop  rax
+    cmp  rax, rbx
+    sete  al
+    movzx rax, al
+    push rax
+    pop  rax
+    test rax, rax
+    je   .IfElse_3
+; напишем ...
+    mov  rax, -1
+    push rax
+    pop  rsi
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rdi, [rel FMT_OUT]
+    xor  eax, eax
+    call printf wrt ..plt
+    mov  rsp, rbx
+    jmp  .IfEnd_3
+.IfElse_3:
+; напишем ...
+    mov  rax, 0
+    push rax
+    pop  rsi
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rdi, [rel FMT_OUT]
+    xor  eax, eax
+    call printf wrt ..plt
+    mov  rsp, rbx
+.IfEnd_3:
+    jmp  .IfEnd_2
+.IfElse_2:
+; напишем ...
+    mov  rax, 1
+    push rax
+    pop  rsi
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rdi, [rel FMT_OUT]
+    xor  eax, eax
+    call printf wrt ..plt
+    mov  rsp, rbx
+; напишем ...
+    mov  rax, -1
+    push rax
+    mov  rax, qword [rbp - 24]        ; c
+    push rax
+    pop  rbx
+    pop  rax
+    imul rax, rbx
+    push rax
+    mov  rax, qword [rbp - 16]        ; b
+    push rax
+    pop  rbx
+    pop  rax
+    cqo
+    idiv rbx
+    push rax
+    pop  rsi
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rdi, [rel FMT_OUT]
+    xor  eax, eax
+    call printf wrt ..plt
+    mov  rsp, rbx
+.IfEnd_2:
+    jmp  .IfEnd_1
+.IfElse_1:
+; ---------- из формулы <детерминанта> находим D ----------
+    mov  rax, qword [rbp - 8]         ; a
+    push rax
+    mov  rax, qword [rbp - 16]        ; b
+    push rax
+    mov  rax, qword [rbp - 24]        ; c
+    push rax
+    call Func_2
+    add  rsp, 24
+    mov  qword [rbp - 40], rax        ; D
+; ---------- из формулы <первогокорняквадратногоуравнения> находим x1 ----------
+    mov  rax, qword [rbp - 40]        ; D
+    push rax
+    mov  rax, qword [rbp - 8]         ; a
+    push rax
+    mov  rax, qword [rbp - 16]        ; b
+    push rax
+    call Func_0
+    add  rsp, 24
+    mov  qword [rbp - 48], rax        ; x1
+; ---------- из формулы <второгокорняквадратногоуравнения> находим x2 ----------
+    mov  rax, qword [rbp - 40]        ; D
+    push rax
+    mov  rax, qword [rbp - 8]         ; a
+    push rax
+    mov  rax, qword [rbp - 16]        ; b
+    push rax
+    call Func_1
+    add  rsp, 24
+    mov  qword [rbp - 56], rax        ; x2
+; ---------- if #4 ----------
+    mov  rax, qword [rbp - 40]        ; D
+    push rax
+    mov  rax, 0
+    push rax
+    pop  rbx
+    pop  rax
+    cmp  rax, rbx
+    sete  al
+    movzx rax, al
+    push rax
+    pop  rax
+    test rax, rax
+    je   .IfElse_4
+; напишем ...
+    mov  rax, 1
+    push rax
+    pop  rsi
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rdi, [rel FMT_OUT]
+    xor  eax, eax
+    call printf wrt ..plt
+    mov  rsp, rbx
+; напишем ...
+    mov  rax, qword [rbp - 48]        ; x1
+    push rax
+    pop  rsi
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rdi, [rel FMT_OUT]
+    xor  eax, eax
+    call printf wrt ..plt
+    mov  rsp, rbx
+    jmp  .IfEnd_4
+.IfElse_4:
+; ---------- if #5 ----------
+    mov  rax, qword [rbp - 40]        ; D
+    push rax
+    mov  rax, 0
+    push rax
+    pop  rbx
+    pop  rax
+    cmp  rax, rbx
+    setg  al
+    movzx rax, al
+    push rax
+    pop  rax
+    test rax, rax
+    je   .IfElse_5
+; напишем ...
+    mov  rax, 2
+    push rax
+    pop  rsi
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rdi, [rel FMT_OUT]
+    xor  eax, eax
+    call printf wrt ..plt
+    mov  rsp, rbx
+; напишем ...
+    mov  rax, qword [rbp - 48]        ; x1
+    push rax
+    pop  rsi
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rdi, [rel FMT_OUT]
+    xor  eax, eax
+    call printf wrt ..plt
+    mov  rsp, rbx
+; напишем ...
+    mov  rax, qword [rbp - 56]        ; x2
+    push rax
+    pop  rsi
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rdi, [rel FMT_OUT]
+    xor  eax, eax
+    call printf wrt ..plt
+    mov  rsp, rbx
+    jmp  .IfEnd_5
+.IfElse_5:
+; ---------- if #6 ----------
+    mov  rax, qword [rbp - 40]        ; D
+    push rax
+    mov  rax, 0
+    push rax
+    pop  rbx
+    pop  rax
+    cmp  rax, rbx
+    setl  al
+    movzx rax, al
+    push rax
+    pop  rax
+    test rax, rax
+    je   .IfElse_6
+; напишем ...
+    mov  rax, 0
+    push rax
+    pop  rsi
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rdi, [rel FMT_OUT]
+    xor  eax, eax
+    call printf wrt ..plt
+    mov  rsp, rbx
+    jmp  .IfEnd_6
+.IfElse_6:
+.IfEnd_6:
+.IfEnd_5:
+.IfEnd_4:
+.IfEnd_1:
+; примечание к шагу №2 (обработчик, вызывается по jmp .Note_7)
+    jmp  .NoteEnd_7
+.Note_7:
+    mov  rax, 1
+    push rax
+    pop  rax
+    mov  qword [rbp - 32], rax        ; условимся xxx = ...
+; напишем ...
+    mov  rax, 1
+    push rax
+    pop  rsi
+    mov  rbx, rsp
+    and  rsp, -16
+    lea  rdi, [rel FMT_OUT]
+    xor  eax, eax
+    call printf wrt ..plt
+    mov  rsp, rbx
+.NoteEnd_7:
+
+    xor  eax, eax
+    leave
+    ret
+
+; =============================================================
+;  формула <первогокорняквадратногоуравнения>, параметров: 3
+; =============================================================
+Func_0:
+    push rbp
+    mov  rbp, rsp
+    sub  rsp, 512
+; возвращаемое значение
+    mov  rax, -1
+    push rax
+    mov  rax, qword [rbp + 16]        ; b
+    push rax
+    pop  rbx
+    pop  rax
+    imul rax, rbx
+    push rax
+    mov  rax, qword [rbp + 32]        ; D
+    push rax
+    pop  rax
+    call IntSqrt
+    push rax
+    pop  rbx
+    pop  rax
+    add  rax, rbx
+    push rax
+    mov  rax, 2
+    push rax
+    mov  rax, qword [rbp + 24]        ; a
+    push rax
+    pop  rbx
+    pop  rax
+    imul rax, rbx
+    push rax
+    pop  rbx
+    pop  rax
+    cqo
+    idiv rbx
+    push rax
+    pop  rax
+    leave
+    ret
+
+; =============================================================
+;  формула <второгокорняквадратногоуравнения>, параметров: 3
+; =============================================================
+Func_1:
+    push rbp
+    mov  rbp, rsp
+    sub  rsp, 512
+; возвращаемое значение
+    mov  rax, -1
+    push rax
+    mov  rax, qword [rbp + 16]        ; b
+    push rax
+    pop  rbx
+    pop  rax
+    imul rax, rbx
+    push rax
+    mov  rax, qword [rbp + 32]        ; D
+    push rax
+    pop  rax
+    call IntSqrt
+    push rax
+    pop  rbx
+    pop  rax
+    sub  rax, rbx
+    push rax
+    mov  rax, 2
+    push rax
+    mov  rax, qword [rbp + 24]        ; a
+    push rax
+    pop  rbx
+    pop  rax
+    imul rax, rbx
+    push rax
+    pop  rbx
+    pop  rax
+    cqo
+    idiv rbx
+    push rax
+    pop  rax
+    leave
+    ret
+
+; =============================================================
+;  формула <детерминанта>, параметров: 3
+; =============================================================
+Func_2:
+    push rbp
+    mov  rbp, rsp
+    sub  rsp, 512
+    mov  rax, qword [rbp + 24]        ; b
+    push rax
+    mov  rax, qword [rbp + 24]        ; b
+    push rax
+    pop  rbx
+    pop  rax
+    imul rax, rbx
+    push rax
+    pop  rax
+    mov  qword [rbp - 8], rax         ; условимся b2 = ...
+; возвращаемое значение
+    mov  rax, qword [rbp - 8]         ; b2
+    push rax
+    mov  rax, 4
+    push rax
+    mov  rax, qword [rbp + 32]        ; a
+    push rax
+    pop  rbx
+    pop  rax
+    imul rax, rbx
+    push rax
+    mov  rax, qword [rbp + 16]        ; c
+    push rax
+    pop  rbx
+    pop  rax
+    imul rax, rbx
+    push rax
+    pop  rbx
+    pop  rax
+    sub  rax, rbx
+    push rax
+    pop  rax
+    leave
+    ret
+
+; =============================================================
+;  рантайм: целочисленный корень (метод Ньютона) и степень
+; =============================================================
+IntSqrt:
+    push rbx
+    push rcx
+    push rdx
+    mov  rbx, rax
+    cmp  rbx, 1
+    jle  .SqrtSmall
+    mov  rax, rbx
+.SqrtLoop:
+    mov  rcx, rax
+    mov  rax, rbx
+    cqo
+    idiv rcx
+    add  rax, rcx
+    sar  rax, 1
+    cmp  rax, rcx
+    jl   .SqrtLoop
+    mov  rax, rcx
+.SqrtDone:
+    pop  rdx
+    pop  rcx
+    pop  rbx
+    ret
+.SqrtSmall:
+    mov  rax, rbx
+    jmp  .SqrtDone
+
+IntPow:
+    push rcx
+    push rdx
+    mov  rcx, rbx
+    mov  rdx, rax
+    mov  rax, 1
+    cmp  rcx, 0
+    jle  .PowDone
+.PowLoop:
+    imul rax, rdx
+    dec  rcx
+    jnz  .PowLoop
+.PowDone:
+    pop  rdx
+    pop  rcx
+    ret
+
+section .note.GNU-stack noalloc noexec nowrite progbits

@@ -2,11 +2,9 @@
 #define MYLANGVARS_H
 
 #include <stdlib.h>
-
 typedef const char * const string;
 
 string AllValueTypesTxt[]         = {"OPER", "VAR", "NUM", "CNOP", "STR"};
-string dump_site_name             = "dump.html";
 string dump_graph_txt_file_name   = "graph/graph.txt";
 
 const size_t START_INIT_SIZE    = 100;
@@ -80,6 +78,7 @@ const size_t POISON             = 0xDEDDEAF;
     n(OPER_OUT,              "OUT"              ,   "напишем")                                                                   \
     n(OPER_WHILE,            "WHILE"            ,   "для ∀")                                                                     \
     n(OPER_FUNC_CALL,        "FUNC_CALL"        ,   "из формулы")                                                                \
+    n(OPER_FUNC_VARS,        "FUNC_VARS"        ,   "")\
     n(OPER_THEN,             ""                 ,   "то")                                                                        \
     n(OPER_COMMA,            ""                 ,   ",")                                                                         \
     n(OPER_RETURN,           ""                 ,   "⇒")                                                                        \
@@ -87,7 +86,6 @@ const size_t POISON             = 0xDEDDEAF;
     n(OPER_WHILE_BODY,       ""                 ,   "↳")                                                                         \
     n(OPER_FINDING,          ""                 ,   "находим")                                                                   \
     n(OPER_COLON,            ""                 ,   ":")                                                                         \
-    n(OPER_LINE,             "LINE"             ,   "-")                                                                         \
     n(OPER_QUOTE,            ""                 ,   "\"")                                                                        \
     n(OPER_NEW_NAME,         "NEW_NAME"         ,   "")                                                                          \
     n(OPER_NEW_FUNC,         "NEW_FUNC"         ,   "")                                                                          \
@@ -107,8 +105,8 @@ const size_t POISON             = 0xDEDDEAF;
     n(OPER_STEP,             "TRY"              ,   "шаг №")                                                                     \
     n(OPER_NOTE,             "NOTE"             ,   "примечание")                                                                     \
     n(OPER_NULL,             "NULL"             ,   "")                                                                     \
-    n(OPER_DASH,             "DASH"             ,   "-")                                                                     \
-    n(OPER_EXCEPT,           "EXCEPT"           ,   "Если этот шаг не получился, то см. примечание")                                                                     \
+    n(OPER_DLYA,             "DLYA"             ,   "для")                                                                     \
+    n(OPER_EXCEPT,           "EXCEPT"           ,   "если этот шаг не получился, то см. примечание")                                                                     \
     n(OPER_SCOPE_CLOSE,      "SCOPE_CLOSE"      ,   "}")\
     n(OPER_SCOPE_OPEN,       "SCOPE_OPEN"       ,   "{")\
     n(OPER_ARTHM_MUL,        "*"                ,   "*"     )                                                                    \
@@ -138,13 +136,13 @@ const size_t POISON             = 0xDEDDEAF;
     (oper_t) {\
                 .Dump = #NAME,\
                 .Tree = TreeName,\
-                .Text = (string []){__VA_ARGS__}\
+                .Text = {__VA_ARGS__}\
             },
 
 typedef struct {
     string Dump;
     string Tree;
-    string *Text;
+    string Text[MAX_STR_VAR];
 } oper_t;
 const oper_t AllOper[] = {
     LANG_OPER_TYPES(MAKE_OPER_STRUCT)
